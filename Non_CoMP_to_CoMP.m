@@ -189,7 +189,7 @@ if (isempty(RB_empty_intersect) == 1) && (UE_throughput_CoMP < GBR)
 						Rsrp_watt         = 10^(Rsrp_dB/10); 
 						Rsrp_watt_perRB   = Rsrp_watt/Pico_part;
 
-						RB_we_take = find(UE_RB_used(UE_index_need_to_move, 1:Pico_part) == 1);
+						RB_we_take = find(UE_RB_used(UE_index_need_to_move, 1:1:Pico_part) == 1);
 						for RB_index = 1:1:length(RB_we_take)   % 這些可以丟的RB，最後要算出每一塊所提供的  Throughput
 							RB_Total_Interference = 0;
 							RB_RSRQ       = 0;			

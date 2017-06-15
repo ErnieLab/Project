@@ -9,13 +9,13 @@ Thr_min = 0;        % [bit/sec/Hz]
 Thr_MAX = 4.8;      % [bit/sec/Hz]
 Alpha = 0.75;       % Attenuation Factor
 
-sinr_watt = RSRQ/(1 - RSRQ);
-sinr_dB = 10*log10(sinr_watt);
+sinr = RSRQ/(1 - RSRQ);
+sinr_dB = 10*log10(sinr);
 
 if     (sinr_dB < sinr_min_dB)
     Throughput = Thr_min;
 elseif (sinr_dB >= sinr_min_dB && sinr_dB < sinr_MAX_dB)
-    Throughput = Alpha * log2(1 + sinr_watt);
+    Throughput = Alpha * log2(1 + sinr);
 elseif (sinr_dB >= sinr_MAX_dB)
     Throughput = Thr_MAX;
 end

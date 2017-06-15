@@ -684,13 +684,13 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					if UE_Throughput(idx_UE) < GBR
 						if idx_UEcnct_TST(idx_UE) <= n_MC
 							%  看能不能換個RB 位置 					
-							if UE_Throughput(idx_UE) < GBR && (isempty(find(UE_RB_used(idx_UE,:) == 1)) == 0) && (isempty(find(BS_RB_table(idx_UEcnct_TST(idx_UE),:) == 0)) == 0)
+							if (isempty(find(UE_RB_used(idx_UE,:) == 1)) == 0) && (isempty(find(BS_RB_table(idx_UEcnct_TST(idx_UE),:) == 0)) == 0)
 								[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_Serving_change_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 									                                                                                          idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);						                                                                                          
 							end
 						else
 							%  看能不能換個RB 位置 					
-							if UE_Throughput(idx_UE) < GBR && (isempty(find(UE_RB_used(idx_UE, 1:Pico_part) == 1)) == 0) && (isempty(find(BS_RB_table(idx_UEcnct_TST(idx_UE),:) == 0)) == 0)
+							if (isempty(find(UE_RB_used(idx_UE, 1:Pico_part) == 1)) == 0) && (isempty(find(BS_RB_table(idx_UEcnct_TST(idx_UE),:) == 0)) == 0)
 								[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_Serving_change_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 									                                                                                          idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);		                                                                                          
 							end
@@ -710,33 +710,51 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 					end
 
-					% ----------- %
-					% 更新Loading %
-					% ----------- %
-					[Load_TST] = Update_Loading(n_BS, n_MC, BS_RB_table, n_ttoffered, Pico_part);	
-
-					% --------------------- %
-					% 看看能不能在執行CoMP  %
-					% --------------------- %
+					% ------------------------------------------- %
+					% 先看看能不能執行Dynamic Resource Scheduling % 
+					% ------------------------------------------- %
 					if UE_Throughput(idx_UE) < GBR
-						if idx_UEcnct_TST(idx_UE) > n_MC && idx_trgt > n_MC
-							if idx_UEcnct_TST(idx_UE) ~= idx_trgt
-								if Load_TST(idx_UEcnct_TST(idx_UE)) > Load_TST(idx_trgt)
-									if RsrpBS_dBm(idx_UEcnct_TST(idx_UE)) <= RsrpBS_dBm(idx_trgt) + CoMP_Threshold
-										% UE達不到QoS了，看能不能做CoMP
-										[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE)] = Non_CoMP_to_CoMP(BS_lct, n_MC, n_PC, P_MC_dBm, P_PC_dBm, BS_RB_table, BS_RB_who_used, UE_lct, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-																																															idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
-																																															GBR, BW_PRB, idx_UEcnct_CoMP, UE_CoMP_orNOT);
-										if UE_CoMP_orNOT(idx_UE) == 1
-											Success_Enter_CoMP_times = Success_Enter_CoMP_times + 1;
-										end	
+						if idx_trgt > n_MC
+							% Dynamic Resource Scheduling 寫在這段
+							if (isempty(find(UE_RB_used(idx_UE, 1:Pico_part) == 1)) == 0) && (isempty(find(BS_RB_table(idx_trgt,:) == 0)) == 0)
+								[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_DRS(BS_lct, n_MC, n_PC, P_MC_dBm, P_PC_dBm, BS_RB_table, BS_RB_who_used, UE_lct, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+																												idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
+																												GBR, BW_PRB);
 
-										% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+								% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+							end							
+
+							% 做完Dynamic Resource Scheduling 發現QoS還是不夠，就看看能不能做CoMP，前提是Serving也要是Pico   Cell，如果不是那就沒辦法做CoMP了
+							if UE_Throughput(idx_UE) < GBR
+
+								% --------------------- %
+								% 再看看能不能執行CoMP  %  
+								% --------------------- %
+								if idx_UEcnct_TST(idx_UE) > n_MC
+
+									% ----------- %
+									% 更新Loading %
+									% ----------- %
+									[Load_TST] = Update_Loading(n_BS, n_MC, BS_RB_table, n_ttoffered, Pico_part);	
+
+									if Load_TST(idx_UEcnct_TST(idx_UE)) > Load_TST(idx_trgt)
+										if RsrpBS_dBm(idx_UEcnct_TST(idx_UE)) <= RsrpBS_dBm(idx_trgt) + CoMP_Threshold
+											% CoMP掛在這邊
+											% [BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE)] = Non_CoMP_to_CoMP(BS_lct, n_MC, n_PC, P_MC_dBm, P_PC_dBm, BS_RB_table, BS_RB_who_used, UE_lct, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+											% 																																				idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
+											% 																																				GBR, BW_PRB, idx_UEcnct_CoMP, UE_CoMP_orNOT);
+											
+											% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+											if UE_CoMP_orNOT(idx_UE) == 1
+												Success_Enter_CoMP_times = Success_Enter_CoMP_times + 1;
+											end	
+										end
 									end
-								end	
-							end	
+								end
+
+							end
 						end
-					end
+					end					
 
 					% ---------------------------------------------------------- %
 					% 如果在上面執行了CoMP，QoS一定會通過，沒通過的話再多拿RB    % 

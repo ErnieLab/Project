@@ -16,12 +16,11 @@ else
 end
 
 RB_UE_used_RSRQ = zeros(1, length(RB_UE_used));    % 自己用的每一塊RB所提供的RSRQ  [bit/sec/RB]
-RB_empty_RSRQ   = zeros(1, length(RB_empty));     % 每一塊可以拿的RB，所提供的RSRQ多少   [bit/sec/RB]
+RB_empty_RSRQ   = zeros(1, length(RB_empty));      % 每一塊可以拿的RB，所提供的RSRQ多少   [bit/sec/RB]
 
 % --------------------------------------- %
 % 先把每一塊RB對UE的Throughput貢獻算出來  %
 % --------------------------------------- %
-
 if Serving_Cell_index <= n_MC
 	Serving_Cell_RSRP_watt_perRB = RsrpBS_Watt(Serving_Cell_index)/n_ttoffered;
 	total_RB_Num = n_ttoffered;
@@ -59,41 +58,37 @@ RB_empty_RSRQ   = RB_RSRQ(RB_empty);   % Serving_Cell_index沒有使用的RB之R
 % 看有沒有RB可以換  %  
 % ----------------- %
 while UE_throughput < GBR
-	if (isempty(RB_empty) == 1)  % 該BS沒有空的RB，不能換
+	% -------------------------------- %
+	% 開始跟空的RB交換，來讓UE支持GBR  %
+	% -------------------------------- %
+	[RB_UE_used_minRSRQ_value, RB_UE_used_minRSRQ_index] = min(RB_UE_used_RSRQ);
+	[RB_empty_maxRSRQ_value, RB_empty_maxRSRQ_index]     = max(RB_empty_RSRQ);
+	
+	if 	RB_UE_used_minRSRQ_value >= RB_empty_maxRSRQ_value  % 如果自己拿的RB中，最小RSRQ的那個，還比空的RB能提供最大的RSRQ還大
 		break;
 	else
-		% -------------------------------- %
-		% 開始跟空的RB交換，來讓UE支持GBR  %
-		% -------------------------------- %
-		[RB_UE_used_minRSRQ_value, RB_UE_used_minRSRQ_index] = min(RB_UE_used_RSRQ);
-		[RB_empty_maxRSRQ_value, RB_empty_maxRSRQ_index]     = max(RB_empty_RSRQ);
+		% 跟空的RB交換位置		
+		BS_RB_table(Serving_Cell_index, RB_UE_used(RB_UE_used_minRSRQ_index))    = 0;
+		BS_RB_who_used(Serving_Cell_index, RB_UE_used(RB_UE_used_minRSRQ_index)) = 0;	
+		UE_RB_used(idx_UE, RB_UE_used(RB_UE_used_minRSRQ_index))                 = 0;		
 		
-		if 	RB_UE_used_minRSRQ_value >= RB_empty_maxRSRQ_value  % 如果自己拿的RB中，最小RSRQ的那個，還比空的RB能提供最大的RSRQ還大
-			break;
-		else
-			% 跟空的RB交換位置
-			UE_RB_used(idx_UE, RB_UE_used(RB_UE_used_minRSRQ_index))                 = 0;
-			BS_RB_table(Serving_Cell_index, RB_UE_used(RB_UE_used_minRSRQ_index))    = 0;
-			BS_RB_who_used(Serving_Cell_index, RB_UE_used(RB_UE_used_minRSRQ_index)) = 0;	
-			
-			UE_RB_used(idx_UE, RB_empty(RB_empty_maxRSRQ_index))                 = 1;
-			BS_RB_table(Serving_Cell_index, RB_empty(RB_empty_maxRSRQ_index))    = 1;
-			BS_RB_who_used(Serving_Cell_index, RB_empty(RB_empty_maxRSRQ_index)) = idx_UE;
+		BS_RB_table(Serving_Cell_index, RB_empty(RB_empty_maxRSRQ_index))    = 1;
+		BS_RB_who_used(Serving_Cell_index, RB_empty(RB_empty_maxRSRQ_index)) = idx_UE;
+		UE_RB_used(idx_UE, RB_empty(RB_empty_maxRSRQ_index))                 = 1;
 
-			temp_RB      = RB_UE_used(RB_UE_used_minRSRQ_index);
-			temp_RB_RSRQ = RB_UE_used_RSRQ(RB_UE_used_minRSRQ_index);
+		temp_RB      = RB_UE_used(RB_UE_used_minRSRQ_index);
+		temp_RB_RSRQ = RB_UE_used_RSRQ(RB_UE_used_minRSRQ_index);
 
-			RB_UE_used(RB_UE_used_minRSRQ_index)      = []; RB_UE_used      = [RB_UE_used RB_empty(RB_empty_maxRSRQ_index)];
-			RB_UE_used_RSRQ(RB_UE_used_minRSRQ_index) = []; RB_UE_used_RSRQ = [RB_UE_used_RSRQ RB_empty_RSRQ(RB_empty_maxRSRQ_index)];
-			RB_empty(RB_empty_maxRSRQ_index)          = []; RB_empty        = [RB_empty temp_RB];
-			RB_empty_RSRQ(RB_empty_maxRSRQ_index)     = []; RB_empty_RSRQ   = [RB_empty_RSRQ temp_RB_RSRQ];
-            
-            % 更新UE throughput
-            RB_UE_used_minThroughput_value = BW_PRB*MCS_3GPP36942(RB_UE_used_minRSRQ_value);
-            RB_empty_maxThroughput_value   = BW_PRB*MCS_3GPP36942(RB_empty_maxRSRQ_value);
+		RB_UE_used(RB_UE_used_minRSRQ_index)      = []; RB_UE_used      = [RB_UE_used RB_empty(RB_empty_maxRSRQ_index)];
+		RB_UE_used_RSRQ(RB_UE_used_minRSRQ_index) = []; RB_UE_used_RSRQ = [RB_UE_used_RSRQ RB_empty_RSRQ(RB_empty_maxRSRQ_index)];
+		RB_empty(RB_empty_maxRSRQ_index)          = []; RB_empty        = [RB_empty temp_RB];
+		RB_empty_RSRQ(RB_empty_maxRSRQ_index)     = []; RB_empty_RSRQ   = [RB_empty_RSRQ temp_RB_RSRQ];
+        
+        % 更新UE throughput
+        RB_UE_used_minThroughput_value = BW_PRB*MCS_3GPP36942(RB_UE_used_minRSRQ_value);
+        RB_empty_maxThroughput_value   = BW_PRB*MCS_3GPP36942(RB_empty_maxRSRQ_value);
 
-			UE_throughput = UE_throughput - RB_UE_used_minThroughput_value + RB_empty_maxThroughput_value;
-		end
+		UE_throughput = UE_throughput - RB_UE_used_minThroughput_value + RB_empty_maxThroughput_value;
 	end
 end
 

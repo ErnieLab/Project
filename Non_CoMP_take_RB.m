@@ -8,8 +8,8 @@ function [BS_RB_table_output, BS_RB_who_used_output, UE_RB_used_output, UE_throu
 % 暫存用，如果要不到RB，要恢復成原本的樣子  %
 % ----------------------------------------- %
 temp_BS_RB_table    = BS_RB_table;
-temp_UE_RB_used     = UE_RB_used;
 temp_BS_RB_who_used = BS_RB_who_used;
+temp_UE_RB_used     = UE_RB_used;
 temp_UE_throughput  = UE_throughput;
 
 % ------- %
@@ -31,8 +31,8 @@ Dis_Connect_Reason = 0; % 有2個原因使UE被切斷:   (1)Dis_Connect_Reason =
 % ---------------- %
 if (isempty(RB_we_can_take) == 1) % 沒有RB可以拿，不好意思你被犧牲搂
 	BS_RB_table    = temp_BS_RB_table;
-	UE_RB_used     = temp_UE_RB_used;
 	BS_RB_who_used = temp_BS_RB_who_used;
+	UE_RB_used     = temp_UE_RB_used;
 	UE_throughput  = temp_UE_throughput;
 
 	Dis_Connect_Reason   = 1;
@@ -73,8 +73,8 @@ else
 	while UE_throughput < GBR	
 		if (isempty(RB_we_can_take) == 1) % 如果RB已經被拿光了	
 			BS_RB_table    = temp_BS_RB_table;
-			UE_RB_used     = temp_UE_RB_used;
 			BS_RB_who_used = temp_BS_RB_who_used;
+			UE_RB_used     = temp_UE_RB_used;
 			UE_throughput  = temp_UE_throughput;
 
 			Dis_Connect_Reason = 1;
@@ -85,9 +85,9 @@ else
 			RB_throughput = BW_PRB*MCS_3GPP36942(RB_maxRSRQ_value);			
 
 			if RB_throughput == 0  % 如果拿了RSRQ最高的RB, Throughput居然是0，代表UE離 Serving_Cell_index太遠了		
-				BS_RB_table    = temp_BS_RB_table;
-				UE_RB_used     = temp_UE_RB_used;
+				BS_RB_table    = temp_BS_RB_table;				
 				BS_RB_who_used = temp_BS_RB_who_used;
+				UE_RB_used     = temp_UE_RB_used;
 				UE_throughput  = temp_UE_throughput;
 
 				Dis_Connect_Reason = 2;	

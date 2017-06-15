@@ -8,8 +8,8 @@ function [BS_RB_table_output, BS_RB_who_used_output, UE_RB_used_output, idx_UEcn
 % 暫存用，如果要不到RB，要恢復成原本的樣子  %
 % ----------------------------------------- %
 temp_BS_RB_table    = BS_RB_table;
-temp_UE_RB_used     = UE_RB_used;
 temp_BS_RB_who_used = BS_RB_who_used;
+temp_UE_RB_used     = UE_RB_used;
 
 % ------- %
 % Initial %
@@ -87,10 +87,10 @@ else
 				UE_throughput      = 0;
 				Dis_Connect_Reason = 2;
 				break;
-			else
-				UE_RB_used(idx_UE, RB_we_can_take(RB_maxRSRQ_index))       = 1;      % UE拿了哪些位置的RB，自己也要知道
+			else				
 		    	BS_RB_table(idx_trgt, RB_we_can_take(RB_maxRSRQ_index))    = 1;      % 把該位置記錄說，有人在用了		    	
 		    	BS_RB_who_used(idx_trgt, RB_we_can_take(RB_maxRSRQ_index)) = idx_UE; % 登記一下這RB是idx_UE用的
+		    	UE_RB_used(idx_UE, RB_we_can_take(RB_maxRSRQ_index))       = 1;      % UE拿了哪些位置的RB，自己也要知道
 
 		    	UE_throughput =  UE_throughput + RB_throughput;          % UE的Throughput
 
