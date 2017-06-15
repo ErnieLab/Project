@@ -70,7 +70,7 @@ Gamma_MC            = 3.76;                                                 % Pa
 Gamma_PC            = 3.67;                                                 % Pathloss Exponent (PC)  
 P_N_dBmHz           = -174; % [dBm/Hz]										% 高斯雜訊的 Power Density [dBm/Hz]
 LTE_NoiseFloor_dBm  = P_N_dBmHz + 10*log10(BW_PRB);							% Noise Floor approximate -121.45 [dBm/RB]
-LTE_NoiseFloor_watt = 10^((LTE_NoiseFloor_dBm - 30)/10);					% Noise Floor approximate 7.1614 * 1e+16 [watt/RB]
+LTE_NoiseFloor_watt = 10^((LTE_NoiseFloor_dBm - 30)/10);					% Noise Floor approximate 7.1614 * 1e-16 [watt/RB]
 
 
 
@@ -375,7 +375,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		fprintf(' %.3f sec\n', idx_t)
 	end
 
-	AMP_Noise  = LTE_NoiseFloor_watt * randn(1);                            % 每個時間點的白高斯 雜訊都不一樣 [watt/RB]
+	AMP_Noise  = LTE_NoiseFloor_watt * abs(randn(1));                            % 每個時間點的白高斯 雜訊都不一樣 [watt/RB]
 
 
 	% Loop 2: User	
@@ -384,7 +384,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		Dis_Connect_Reason  = 0;
 		Dis_Handover_Reason = 0;
 
-		if idx_t >= 1.9
+		if idx_t >= 0.2
 			a = 1;
 		end
 
@@ -715,7 +715,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					% ------------------------------------------- %
 					if UE_Throughput(idx_UE) < GBR
 						if idx_trgt > n_MC
-							% Dynamic Resource Scheduling 寫在這段
+							% Dynamic Resource Scheduling
 							if (isempty(find(UE_RB_used(idx_UE, 1:Pico_part) == 1)) == 0) && (isempty(find(BS_RB_table(idx_trgt,:) == 0)) == 0)
 								[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_DRS(BS_lct, n_MC, n_PC, P_MC_dBm, P_PC_dBm, BS_RB_table, BS_RB_who_used, UE_lct, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 																												idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
@@ -740,9 +740,9 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 									if Load_TST(idx_UEcnct_TST(idx_UE)) > Load_TST(idx_trgt)
 										if RsrpBS_dBm(idx_UEcnct_TST(idx_UE)) <= RsrpBS_dBm(idx_trgt) + CoMP_Threshold
 											% CoMP掛在這邊
-											% [BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE)] = Non_CoMP_to_CoMP(BS_lct, n_MC, n_PC, P_MC_dBm, P_PC_dBm, BS_RB_table, BS_RB_who_used, UE_lct, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-											% 																																				idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
-											% 																																				GBR, BW_PRB, idx_UEcnct_CoMP, UE_CoMP_orNOT);
+											[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE)] = Non_CoMP_to_CoMP(BS_lct, n_MC, n_PC, P_MC_dBm, P_PC_dBm, BS_RB_table, BS_RB_who_used, UE_lct, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+											 																																				    idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
+											 																																				    GBR, BW_PRB, idx_UEcnct_CoMP, UE_CoMP_orNOT);
 											
 											% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 											if UE_CoMP_orNOT(idx_UE) == 1
@@ -751,7 +751,6 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 										end
 									end
 								end
-
 							end
 						end
 					end					
