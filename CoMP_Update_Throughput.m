@@ -25,20 +25,18 @@ for RB_index = 1:1:length(RB_we_can_count)   % 這些可以丟的RB，最後要�
 
 	for BS_index = 1:1:(n_MC + n_PC)
 		if BS_index ~= Serving_Cell_index && BS_index ~= Cooperating_Cell_index % 除了Serving Cell 跟 Cooperating Cell，其他Cell如果有用
-			if BS_index <= n_MC
-				if BS_RB_table(BS_index, RB_we_can_count(RB_index)) == 1               % 別的Macro Cell有用到該RB，就要算進來 
+			if BS_RB_table(BS_index, RB_we_can_count(RB_index)) == 1
+				if BS_index <= n_MC
 					RsrpMC_watt_perRB     = RsrpBS_Watt(BS_index)/n_ttoffered;         % watt在除以RB數目					
 					RB_Total_Interference = RB_Total_Interference + RsrpMC_watt_perRB; % 加起來
-				end
-			else
-				if BS_RB_table(BS_index, RB_we_can_count(RB_index)) == 1               % 別的Pico Cell有用到該RB，就要算進來 
+				else
 					RsrpPC_watt_perRB     = RsrpBS_Watt(BS_index)/Pico_part;           % watt在除以RB數目						 
 					RB_Total_Interference = RB_Total_Interference + RsrpPC_watt_perRB; % 加起來
 				end
 			end 
 		end
 	end
-	RB_Total_Interference = (sqrt(RB_Total_Interference) + AMP_Noise)^2; % 全部加好後還要加上白雜訊  [watt]
+	RB_Total_Interference = RB_Total_Interference + AMP_Noise;  % 全部加好後還要加上白雜訊  [watt]
 	RB_SINR               = (Serving_Cell_RSRP_watt_perRB + Cooperating_Cell_RSRP_watt_perRB)/RB_Total_Interference; % CoMP: 兩邊Cell的Power加起來
 	RB_throughput         = BW_PRB*MCS_3GPP36942(RB_SINR);
 

@@ -23,24 +23,22 @@ Cooperating_Cell_RSRP_watt_perRB = RsrpBS_Watt(Cooperating_Cell_index)/Pico_part
 
 RB_SINR = zeros(1, Pico_part);
 
-for RB_index = 1:1:Pico_part   % 這些可以丟的RB，最後要算出每一塊所提供的  Throughput
+for RB_index = 1:1:Pico_part 
 	RB_Total_Interference = 0;
 	for BS_index = 1:1:(n_MC + n_PC)
 		if BS_index ~= Serving_Cell_index && BS_index ~= Cooperating_Cell_index % 除了Serving Cell 跟 Cooperating Cell，其他Cell如果有用
-			if BS_index <= n_MC
-				if BS_RB_table(BS_index, RB_index) == 1                                % 別的Macro Cell有用到該RB，就要算進來 
+			if BS_RB_table(BS_index, RB_index) == 1
+				if BS_index <= n_MC
 					RsrpMC_watt_perRB     = RsrpBS_Watt(BS_index)/n_ttoffered;         % watt在除以RB數目					
 					RB_Total_Interference = RB_Total_Interference + RsrpMC_watt_perRB; % 加起來
-				end
-			else
-				if BS_RB_table(BS_index, RB_index) == 1                                % 別的Pico Cell有用到該RB，就要算進來 
-					RsrpPC_watt_perRB     = RsrpBS_Watt(BS_index)/Pico_part;           % watt在除以RB數目						 
+				else
+					RsrpPC_watt_perRB     = RsrpBS_Watt(BS_index)/Pico_part;           % watt在除以RB數目					 
 					RB_Total_Interference = RB_Total_Interference + RsrpPC_watt_perRB; % 加起來
-				end
-			end 
+				end 
+			end
 		end
 	end
-	RB_Total_Interference = (sqrt(RB_Total_Interference) + AMP_Noise)^2; % 全部加好後還要加上白雜訊  [watt]
+	RB_Total_Interference = RB_Total_Interference + AMP_Noise; % 全部加好後還要加上白雜訊  [watt]
 	RB_SINR(RB_index)     = (Serving_Cell_RSRP_watt_perRB + Cooperating_Cell_RSRP_watt_perRB)/RB_Total_Interference; % CoMP: 兩邊Cell的Power加起來
 end
 RB_UE_used_SINR = RB_SINR(RB_UE_used); % UE正在使用的RB之SINR
@@ -62,18 +60,18 @@ while UE_throughput < GBR
 		if 	RB_UE_used_minSINR_value >= RB_empty_maxSINR_value  % 如果自己拿的RB中，最小SINR的那個，還比空的RB能提供最大的SINR還大
 			break;
 		else
-			% 跟空的RB交換位置
-			UE_RB_used(idx_UE, RB_UE_used(RB_UE_used_minSINR_index))                     = 0;
+			% 跟空的RB交換位置			
 			BS_RB_table(Serving_Cell_index, RB_UE_used(RB_UE_used_minSINR_index))        = 0;
 			BS_RB_who_used(Serving_Cell_index, RB_UE_used(RB_UE_used_minSINR_index))     = 0;
 			BS_RB_table(Cooperating_Cell_index, RB_UE_used(RB_UE_used_minSINR_index))    = 0;
-			BS_RB_who_used(Cooperating_Cell_index, RB_UE_used(RB_UE_used_minSINR_index)) = 0;		
-
-			UE_RB_used(idx_UE, RB_empty(RB_empty_maxSINR_index))                     = 1;
+			BS_RB_who_used(Cooperating_Cell_index, RB_UE_used(RB_UE_used_minSINR_index)) = 0;
+			UE_RB_used(idx_UE, RB_UE_used(RB_UE_used_minSINR_index))                     = 0;		
+			
 			BS_RB_table(Serving_Cell_index, RB_empty(RB_empty_maxSINR_index))        = 1;
 			BS_RB_who_used(Serving_Cell_index, RB_empty(RB_empty_maxSINR_index))     = idx_UE;
 			BS_RB_table(Cooperating_Cell_index, RB_empty(RB_empty_maxSINR_index))    = 1;
 			BS_RB_who_used(Cooperating_Cell_index, RB_empty(RB_empty_maxSINR_index)) = idx_UE;
+			UE_RB_used(idx_UE, RB_empty(RB_empty_maxSINR_index))                     = 1;
 
 			temp_RB      = RB_UE_used(RB_UE_used_minSINR_index);
 			temp_RB_SINR = RB_UE_used_SINR(RB_UE_used_minSINR_index);
@@ -94,8 +92,8 @@ end
 
 % 輸出改變的矩陣
 BS_RB_table_output    = BS_RB_table;
-UE_RB_used_output     = UE_RB_used;
 BS_RB_who_used_output = BS_RB_who_used;
+UE_RB_used_output     = UE_RB_used;
 
 % 把UE的Throughput輸出
 UE_throughput_After_change = UE_throughput;

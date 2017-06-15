@@ -30,20 +30,18 @@ for RB_index = 1:1:length(RB_we_can_count)   % 這些UE拿的RB，最後要算�
 	RB_throughput         = 0;
 	for BS_index = 1:1:(n_MC + n_PC)
 		if BS_index ~= Serving_Cell_index
-			if BS_index <= n_MC
-				if BS_RB_table(BS_index, RB_we_can_count(RB_index)) == 1
+			if BS_RB_table(BS_index, RB_we_can_count(RB_index)) == 1
+				if BS_index <= n_MC				
 					RsrpMC_watt_perRB     = RsrpBS_Watt(BS_index)/n_ttoffered;
-					RB_Total_Interference = RB_Total_Interference + RsrpMC_watt_perRB;
-				end
-			else
-				if BS_RB_table(BS_index, RB_we_can_count(RB_index)) == 1
+					RB_Total_Interference = RB_Total_Interference + RsrpMC_watt_perRB;				
+				else				
 					RsrpPC_watt_perRB     = RsrpBS_Watt(BS_index)/Pico_part;
-					RB_Total_Interference = RB_Total_Interference + RsrpPC_watt_perRB;
+					RB_Total_Interference = RB_Total_Interference + RsrpPC_watt_perRB;				
 				end
 			end
 		end
 	end
-	RB_Total_Interference = (sqrt(RB_Total_Interference) + AMP_Noise)^2;
+	RB_Total_Interference = RB_Total_Interference + AMP_Noise; 
 	RB_SINR               = Serving_Cell_RSRP_watt_perRB/RB_Total_Interference;
 	RB_throughput         = BW_PRB*MCS_3GPP36942(RB_SINR);
 

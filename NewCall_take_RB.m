@@ -47,20 +47,18 @@ else
 		RB_Total_Interference = 0;
 		for BS_index = 1:1:(n_MC + n_PC)
 			if BS_index ~= idx_trgt
-				if BS_index <= n_MC
-					if BS_RB_table(BS_index, RB_we_can_take(RB_index)) == 1                % 別的Macro Cell有用到該RB，就要算進來 
+				if BS_RB_table(BS_index, RB_we_can_take(RB_index)) == 1 % 該BS有在使用該RB，下面看該BS是Macro還是Pico
+					if BS_index <= n_MC
 						RsrpMC_watt_perRB     = RsrpBS_Watt(BS_index)/n_ttoffered;         % watt在除以RB數目						
-						RB_Total_Interference = RB_Total_Interference + RsrpMC_watt_perRB; % 加起來
-					end
-				else
-					if BS_RB_table(BS_index, RB_we_can_take(RB_index)) == 1                % 別的Pico Cell有用到該RB，就要算進來 
+						RB_Total_Interference = RB_Total_Interference + RsrpMC_watt_perRB; % 加起來						
+					else
 						RsrpPC_watt_perRB     = RsrpBS_Watt(BS_index)/Pico_part;           % watt在除以RB數目						 
-						RB_Total_Interference = RB_Total_Interference + RsrpPC_watt_perRB; % 加起來
-					end
-				end 
+						RB_Total_Interference = RB_Total_Interference + RsrpPC_watt_perRB; % 加起來						
+					end 
+				end
 			end
 		end
-		RB_Total_Interference = (sqrt(RB_Total_Interference) + AMP_Noise)^2; % 全部加好後還要加上白雜訊  [watt]
+		RB_Total_Interference = RB_Total_Interference + AMP_Noise;  % 全部加好後還要加上白雜訊  [watt/RB]
 		RB_SINR(RB_index)     = trgtRSRP_watt_perRB/RB_Total_Interference;		
 	end
 

@@ -8,8 +8,8 @@ function [BS_RB_table_output, UE_RB_used_output, BS_RB_who_used_output, UE_throu
 % 暫存用，如果要不到RB，要恢復成原本的樣子  %
 % ----------------------------------------- %
 temp_BS_RB_table    = BS_RB_table;
-temp_UE_RB_used     = UE_RB_used;
 temp_BS_RB_who_used = BS_RB_who_used;
+temp_UE_RB_used     = UE_RB_used;
 temp_UE_throughput  = UE_throughput;
 
 % ------- %
@@ -36,19 +36,19 @@ if (isempty(RB_empty) == 0) % 有交集進來算
 		for BS_index = 1:1:(n_MC + n_PC)
 			if BS_index ~= Serving_Cell_index && BS_index ~= Cooperating_Cell_index % 除了Serving Cell 跟 Cooperating Cell，其他Cell如果有用
 				if BS_index <= n_MC
-					if BS_RB_table(BS_index, RB_empty(RB_index)) == 1                 % 有其他Macro Cell有用到該RB，就要算進來 
+					if BS_RB_table(BS_index, RB_empty(RB_index)) == 1                      % 有其他Macro Cell有用到該RB，就要算進來 
 						RsrpMC_watt_perRB     = RsrpBS_Watt(BS_index)/n_ttoffered;         % watt在除以RB數目						
 						RB_Total_Interference = RB_Total_Interference + RsrpMC_watt_perRB; % 加起來
 					end
 				else
-					if BS_RB_table(BS_index, RB_empty(RB_index)) == 1                 % 有其他Pico Cell有用到該RB，就要算進來 
+					if BS_RB_table(BS_index, RB_empty(RB_index)) == 1                      % 有其他Pico Cell有用到該RB，就要算進來 
 						RsrpPC_watt_perRB     = RsrpBS_Watt(BS_index)/Pico_part;           % watt在除以RB數目						 
 						RB_Total_Interference = RB_Total_Interference + RsrpPC_watt_perRB; % 加起來
 					end
 				end 
 			end
 		end
-		RB_Total_Interference   = (sqrt(RB_Total_Interference) + AMP_Noise)^2;  % 全部加好後還要加上白雜訊  [watt]
+		RB_Total_Interference   = RB_Total_Interference + AMP_Noise;   % 全部加好後還要加上白雜訊  [watt]
 		RB_empty_SINR(RB_index) = (Serving_Cell_RSRP_watt_perRB + Cooperating_Cell_RSRP_watt_perRB)/RB_Total_Interference; % CoMP: 兩邊Cell的Power加起來
 	end
 
@@ -135,7 +135,7 @@ if (isempty(RB_empty) == 1) && (UE_throughput <= GBR)
 					end
 				end 
 			end
-			RB_Total_Interference          = (sqrt(RB_Total_Interference) + AMP_Noise)^2;  % 全部加好後還要加上白雜訊  [watt]
+			RB_Total_Interference          = RB_Total_Interference + AMP_Noise;   % 全部加好後還要加上白雜訊  [watt]
 			RB_SINR_need_to_move(RB_index) = (Serving_Cell_RSRP_watt_perRB + Cooperating_Cell_RSRP_watt_perRB)/RB_Total_Interference; % CoMP: 兩邊Cell的Power加起來
 		end
 
@@ -222,7 +222,7 @@ if (isempty(RB_empty) == 1) && (UE_throughput <= GBR)
 									end 
 								end
 							end
-							RB_Total_Interference                    = (sqrt(RB_Total_Interference) + AMP_Noise)^2; % 全部加好後還要加上白雜訊  [watt]
+							RB_Total_Interference                    = RB_Total_Interference + AMP_Noise;  % 全部加好後還要加上白雜訊  [watt]
 							RB_SINR                                  = Rsrp_watt_perRB/RB_Total_Interference;
 							RB_after_change_throughput(change_index) = RB_after_change_throughput(change_index) + BW_PRB*MCS_3GPP36942(RB_SINR);
 						end

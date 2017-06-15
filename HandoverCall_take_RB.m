@@ -52,11 +52,11 @@ if isempty(RB_we_can_take) == 1
 	BS_RB_who_used               = temp_BS_RB_who_used;
 	UE_RB_used                   = temp_UE_RB_used;
 	UE_throughput_After_Handover = 0;
-	Dis_Handover_Reason           = 1;
+	Dis_Handover_Reason          = 1;
 else
-	% ------------------------------------ %
-	% 再來算說Target Cell的RB的SINR是多少  %
-	% ------------------------------------ %
+	% ---------------------------------------------- %
+	% 再來算說Target Cell中，可以拿的RB之SINR是多少  %
+	% ---------------------------------------------- %
 	if Target_Cell_index <= n_MC
 		trgtRSRP_watt_perRB = RsrpBS_Watt(Target_Cell_index)/n_ttoffered;
 	else
@@ -67,20 +67,18 @@ else
 		RB_Total_Interference = 0;
 		for BS_index = 1:1:(n_MC + n_PC)
 			if BS_index ~= Target_Cell_index
-				if BS_index <= n_MC
-					if BS_RB_table(BS_index, RB_we_can_take(RB_index)) == 1                % 別的Macro Cell有用到該RB，就要算進來 
+				if BS_RB_table(BS_index, RB_we_can_take(RB_index)) == 1
+					if BS_index <= n_MC
 						RsrpMC_watt_perRB     = RsrpBS_Watt(BS_index)/n_ttoffered;         % watt在除以RB數目						
 						RB_Total_Interference = RB_Total_Interference + RsrpMC_watt_perRB; % 加起來
-					end
-				else
-					if BS_RB_table(BS_index, RB_we_can_take(RB_index)) == 1                % 別的Pico Cell有用到該RB，就要算進來 
+					else
 						RsrpPC_watt_perRB     = RsrpBS_Watt(BS_index)/Pico_part;           % watt在除以RB數目						 
 						RB_Total_Interference = RB_Total_Interference + RsrpPC_watt_perRB; % 加起來
-					end
-				end 
+					end 
+				end
 			end
 		end
-		RB_Total_Interference         = (sqrt(RB_Total_Interference) + AMP_Noise)^2; % 全部加好後還要加上白雜訊  [watt]
+		RB_Total_Interference         = RB_Total_Interference + AMP_Noise;  % 全部加好後還要加上白雜訊  [watt]
 		RB_we_can_take_SINR(RB_index) = trgtRSRP_watt_perRB/RB_Total_Interference;		
 	end
 
@@ -110,7 +108,7 @@ else
 			else				
 		    	BS_RB_table(Target_Cell_index, RB_we_can_take(RB_maxSINR_index))    = 1;      % 把該位置記錄說，有人在用了		    	
 		    	BS_RB_who_used(Target_Cell_index, RB_we_can_take(RB_maxSINR_index)) = idx_UE; % 登記一下這RB是idx_UE用的
-		    	UE_RB_used(idx_UE, RB_we_can_take(RB_maxSINR_index))                = 1;     % UE拿了哪些位置的RB，自己也要知道
+		    	UE_RB_used(idx_UE, RB_we_can_take(RB_maxSINR_index))                = 1;      % UE拿了哪些位置的RB，自己也要知道
 
 		    	UE_throughput_After_Handover = UE_throughput_After_Handover + RB_throughput; % UE的Throughput
 

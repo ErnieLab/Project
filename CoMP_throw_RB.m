@@ -24,20 +24,18 @@ for RB_index = 1:1:length(RB_we_can_throw)   % 這些可以丟的RB，最後要�
 	RB_Total_Interference = 0;
 	for BS_index = 1:1:(n_MC + n_PC)
 		if BS_index ~= Serving_Cell_index && BS_index ~= Cooperating_Cell_index % 除了Serving Cell 跟 Cooperating Cell，其他Cell如果有用
-			if BS_index <= n_MC
-				if BS_RB_table(BS_index, RB_we_can_throw(RB_index)) == 1               % 別的Macro Cell有用到該RB，就要算進來 
+			if BS_RB_table(BS_index, RB_we_can_throw(RB_index)) == 1
+				if BS_index <= n_MC
 					RsrpMC_watt_perRB     = RsrpBS_Watt(BS_index)/n_ttoffered;         % watt在除以RB數目					
 					RB_Total_Interference = RB_Total_Interference + RsrpMC_watt_perRB; % 加起來
-				end
-			else
-				if BS_RB_table(BS_index, RB_we_can_throw(RB_index)) == 1               % 別的Pico Cell有用到該RB，就要算進來 
+				else
 					RsrpPC_watt_perRB     = RsrpBS_Watt(BS_index)/Pico_part;           % watt在除以RB數目						 
 					RB_Total_Interference = RB_Total_Interference + RsrpPC_watt_perRB; % 加起來
-				end
-			end 
+				end 
+			end
 		end
 	end
-	RB_Total_Interference   = (sqrt(RB_Total_Interference) + AMP_Noise)^2; % 全部加好後還要加上白雜訊  [watt]
+	RB_Total_Interference   = RB_Total_Interference + AMP_Noise;  % 全部加好後還要加上白雜訊  [watt]
 	RB_SINR(RB_index)       = (Serving_Cell_RSRP_watt_perRB + Cooperating_Cell_RSRP_watt_perRB)/RB_Total_Interference; % CoMP: 兩邊Cell的Power加起來
 	RB_throughput(RB_index) = BW_PRB*MCS_3GPP36942(RB_SINR(RB_index));
 end
@@ -51,17 +49,17 @@ while isempty(find(RB_throughput == 0)) == 0
 		break;
 	end
 
-	[~, RB_zero_index] = min(RB_throughput);
+	[~, RB_zero_index] = min(RB_throughput);	
 	
-	UE_RB_used(idx_UE, RB_we_can_throw(RB_zero_index))                     = 0;	
 	BS_RB_table(Serving_Cell_index, RB_we_can_throw(RB_zero_index))        = 0;
 	BS_RB_who_used(Serving_Cell_index, RB_we_can_throw(RB_zero_index))     = 0;
 	BS_RB_table(Cooperating_Cell_index, RB_we_can_throw(RB_zero_index))    = 0;
 	BS_RB_who_used(Cooperating_Cell_index, RB_we_can_throw(RB_zero_index)) = 0;	
+	UE_RB_used(idx_UE, RB_we_can_throw(RB_zero_index))                     = 0;	
 
 	RB_SINR(RB_zero_index)         = [];
-	RB_throughput(RB_zero_index)   = [];
 	RB_we_can_throw(RB_zero_index) = [];
+	RB_throughput(RB_zero_index)   = [];
 end
 
 % ------------------- %
@@ -72,18 +70,18 @@ while UE_throughput > GBR
 
 	RB_minSINR_throughput = BW_PRB*MCS_3GPP36942(RB_minSINR_value);
 
-	if (UE_throughput - RB_minSINR_throughput >= GBR)
-		UE_RB_used(idx_UE, RB_we_can_throw(RB_minSINR_index))                     = 0;
+	if (UE_throughput - RB_minSINR_throughput >= GBR)		
 		BS_RB_table(Serving_Cell_index, RB_we_can_throw(RB_minSINR_index))        = 0;
 		BS_RB_who_used(Serving_Cell_index, RB_we_can_throw(RB_minSINR_index))     = 0;
 		BS_RB_table(Cooperating_Cell_index, RB_we_can_throw(RB_minSINR_index))    = 0;
 		BS_RB_who_used(Cooperating_Cell_index, RB_we_can_throw(RB_minSINR_index)) = 0;
+		UE_RB_used(idx_UE, RB_we_can_throw(RB_minSINR_index))                     = 0;
 
 		UE_throughput = UE_throughput - RB_minSINR_throughput;
 
-		RB_we_can_throw(RB_minSINR_index) = [];
 		RB_SINR(RB_minSINR_index)         = [];
-		RB_throughput(RB_minSINR_index)   = []; % 雖然這裡沒用到，但是還是寫一下，方便debug
+		RB_we_can_throw(RB_minSINR_index) = [];
+		RB_throughput(RB_minSINR_index)   = [];
 	else
 		break;
 	end
