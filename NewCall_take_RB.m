@@ -1,5 +1,5 @@
 % =================================================== %
-% 該function是用來讓**New Call**的UE，根據RSRQ來拿RB  %
+% 該function是用來讓**New Call**的UE，根據SINR來拿RB  %
 % =================================================== %
 function [BS_RB_table_output, BS_RB_who_used_output, UE_RB_used_output, idx_UEcnct_TST, UE_throughput_After_take, Dis_Connect_Reason] = NewCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 										                                                                                                               idx_UE, idx_trgt, GBR, BW_PRB)
@@ -20,7 +20,7 @@ else
 	RB_we_can_take = find(BS_RB_table(idx_trgt, 1:Pico_part) == 0);   % 我們可以拿的RB，也就是idx_trgt沒有使用的RB
 end
 
-RB_RSRQ            = zeros(1, length(RB_we_can_take));     % UE準備跟idx_trgt拿RB，所以該矩陣是idx_trgt中，沒有被使用的RB的RSRQ               
+RB_SINR            = zeros(1, length(RB_we_can_take));     % UE準備跟idx_trgt拿RB，所以該矩陣是idx_trgt中，沒有被使用的RB的SINR               
 UE_connect_BS      = 0;                                    % 因為是New Call，所以沒有人服務他
 UE_throughput      = 0;                                    % 因為是New Call，所以Throughput是0
 
@@ -43,7 +43,7 @@ else
 		trgtRSRP_watt_perRB = RsrpBS_Watt(idx_trgt)/Pico_part;
 	end
 
-	for RB_index = 1:1:length(RB_we_can_take)   % 這些可以拿的RB，最後要算出每一塊的RSRQ
+	for RB_index = 1:1:length(RB_we_can_take)   % 這些可以拿的RB，最後要算出每一塊的SINR
 		RB_Total_Interference = 0;
 		for BS_index = 1:1:(n_MC + n_PC)
 			if BS_index ~= idx_trgt
@@ -61,7 +61,7 @@ else
 			end
 		end
 		RB_Total_Interference = (sqrt(RB_Total_Interference) + AMP_Noise)^2; % 全部加好後還要加上白雜訊  [watt]
-		RB_RSRQ(RB_index)     = trgtRSRP_watt_perRB*(1/(RB_Total_Interference  + trgtRSRP_watt_perRB));		
+		RB_SINR(RB_index)     = trgtRSRP_watt_perRB/RB_Total_Interference;		
 	end
 
 	% ---------------------------------- %
@@ -76,11 +76,11 @@ else
 			Dis_Connect_Reason = 1;
 			break;
 		else
-			[RB_maxRSRQ_value, RB_maxRSRQ_index] = max(RB_RSRQ);
+			[RB_maxSINR_value, RB_maxSINR_index] = max(RB_SINR);
 
-			RB_throughput = BW_PRB*MCS_3GPP36942(RB_maxRSRQ_value);
+			RB_throughput = BW_PRB*MCS_3GPP36942(RB_maxSINR_value);
 
-			if RB_throughput == 0  % 如果拿了RSRQ最高的RB, Throughput居然是0，代表UE離 idx_trgt太遠了             
+			if RB_throughput == 0  % 如果拿了SINR最高的RB, Throughput居然是0，代表UE離 idx_trgt太遠了             
 				BS_RB_table        = temp_BS_RB_table;
 				BS_RB_who_used     = temp_BS_RB_who_used;
 				UE_RB_used         = temp_UE_RB_used;
@@ -88,14 +88,14 @@ else
 				Dis_Connect_Reason = 2;
 				break;
 			else				
-		    	BS_RB_table(idx_trgt, RB_we_can_take(RB_maxRSRQ_index))    = 1;      % 把該位置記錄說，有人在用了		    	
-		    	BS_RB_who_used(idx_trgt, RB_we_can_take(RB_maxRSRQ_index)) = idx_UE; % 登記一下這RB是idx_UE用的
-		    	UE_RB_used(idx_UE, RB_we_can_take(RB_maxRSRQ_index))       = 1;      % UE拿了哪些位置的RB，自己也要知道
+		    	BS_RB_table(idx_trgt, RB_we_can_take(RB_maxSINR_index))    = 1;      % 把該位置記錄說，有人在用了		    	
+		    	BS_RB_who_used(idx_trgt, RB_we_can_take(RB_maxSINR_index)) = idx_UE; % 登記一下這RB是idx_UE用的
+		    	UE_RB_used(idx_UE, RB_we_can_take(RB_maxSINR_index))       = 1;      % UE拿了哪些位置的RB，自己也要知道
 
-		    	UE_throughput =  UE_throughput + RB_throughput;          % UE的Throughput
+		    	UE_throughput = UE_throughput + RB_throughput;                       % UE的Throughput
 
-		        RB_RSRQ(RB_maxRSRQ_index)         = [];
-		        RB_we_can_take(RB_maxRSRQ_index)  = [];		        
+		        RB_SINR(RB_maxSINR_index)         = [];
+		        RB_we_can_take(RB_maxSINR_index)  = [];		        
 			end
 		end
 	end

@@ -26,7 +26,7 @@ end
 
 for RB_index = 1:1:length(RB_we_can_count)   % 這些UE拿的RB，最後要算出每一塊所提供的  RSRQ
 	RB_Total_Interference = 0;
-	RB_RSRQ               = 0;
+	RB_SINR               = 0;
 	RB_throughput         = 0;
 	for BS_index = 1:1:(n_MC + n_PC)
 		if BS_index ~= Serving_Cell_index
@@ -44,8 +44,8 @@ for RB_index = 1:1:length(RB_we_can_count)   % 這些UE拿的RB，最後要算�
 		end
 	end
 	RB_Total_Interference = (sqrt(RB_Total_Interference) + AMP_Noise)^2;
-	RB_RSRQ               = Serving_Cell_RSRP_watt_perRB*(1/(RB_Total_Interference + Serving_Cell_RSRP_watt_perRB));
-	RB_throughput         = BW_PRB*MCS_3GPP36942(RB_RSRQ);
+	RB_SINR               = Serving_Cell_RSRP_watt_perRB/RB_Total_Interference;
+	RB_throughput         = BW_PRB*MCS_3GPP36942(RB_SINR);
 
 	UE_throughput         = UE_throughput + RB_throughput;
 end

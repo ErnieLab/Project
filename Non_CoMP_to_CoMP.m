@@ -1,5 +1,5 @@
 % =============================================================================== %
-% 該function是用來讓**Non-CoMP**的UE，根據RSRQ來找可以做CoMP的RB  ，進入CoMP mode %
+% 該function是用來讓**Non-CoMP**的UE，根據SINR來找可以做CoMP的RB  ，進入CoMP mode %
 % =============================================================================== %
 function [BS_RB_table_output, BS_RB_who_used_output, UE_RB_used_output, idx_UEcnct_TST_output, idx_UEcnct_CoMP_output, UE_CoMP_orNOT_output, UE_throughput_After_take] = Non_CoMP_to_CoMP(BS_lct, n_MC, n_PC, P_MC_dBm, P_PC_dBm, BS_RB_table, BS_RB_who_used, UE_lct, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 																																														  idx_UE, Serving_Cell_index, Cooperating_Cell_index, UE_throughput, ...
@@ -33,7 +33,7 @@ RB_Serving_Cell_empty     = find(BS_RB_table(Serving_Cell_index, 1:Pico_part) ==
 RB_Cooperating_Cell_empty = find(BS_RB_table(Cooperating_Cell_index, 1:Pico_part) == 0); % Target  Cell空的RB
 
 RB_empty_intersect        = intersect(RB_Serving_Cell_empty, RB_Cooperating_Cell_empty); % 兩個Cell都沒使用的RB
-RB_RSRQ_intersect         = zeros(1, length(RB_empty_intersect));
+RB_SINR_intersect         = zeros(1, length(RB_empty_intersect));
 
 Serving_Cell_RSRP_watt_perRB     = RsrpBS_Watt(Serving_Cell_index)/Pico_part;
 Cooperating_Cell_RSRP_watt_perRB = RsrpBS_Watt(Cooperating_Cell_index)/Pico_part;
@@ -57,7 +57,7 @@ if (isempty(RB_empty_intersect) == 0) % 有交集進來算
 			end
 		end
 		RB_Total_Interference       = (sqrt(RB_Total_Interference) + AMP_Noise)^2;  % 全部加好後還要加上白雜訊  [watt]
-		RB_RSRQ_intersect(RB_index) = (Serving_Cell_RSRP_watt_perRB + Cooperating_Cell_RSRP_watt_perRB)*(1/(RB_Total_Interference + Serving_Cell_RSRP_watt_perRB + Cooperating_Cell_RSRP_watt_perRB)); % CoMP: 兩邊Cell的Power加起來
+		RB_SINR_intersect(RB_index) = (Serving_Cell_RSRP_watt_perRB + Cooperating_Cell_RSRP_watt_perRB)/RB_Total_Interference; % CoMP: 兩邊Cell的Power加起來
 	end
 
 	while UE_throughput_CoMP < GBR	
@@ -65,9 +65,9 @@ if (isempty(RB_empty_intersect) == 0) % 有交集進來算
 			% 沒有空的給你拿了，出去迴圈想辦法
 			break;
 		else
-			[RB_maxRSRQ_value, RB_maxRSRQ_index] = max(RB_RSRQ_intersect);
+			[RB_maxSINR_value, RB_maxSINR_index] = max(RB_SINR_intersect);
 
-			RB_throughput = BW_PRB*MCS_3GPP36942(RB_maxRSRQ_value);
+			RB_throughput = BW_PRB*MCS_3GPP36942(RB_maxSINR_value);
 
 			if 	RB_throughput == 0 % 如果拿了Throughput最高的RB, Throughput居然是0，代表UE離兩邊Cell都太遠了  => 不玩了??
 				BS_RB_table    = temp_BS_RB_table;
@@ -75,17 +75,17 @@ if (isempty(RB_empty_intersect) == 0) % 有交集進來算
 				BS_RB_who_used = temp_BS_RB_who_used;
 				break;
 			else	
-				BS_RB_table(Serving_Cell_index, RB_empty_intersect(RB_maxRSRQ_index))        = 1;				
-				BS_RB_who_used(Serving_Cell_index, RB_empty_intersect(RB_maxRSRQ_index))     = idx_UE;
-				BS_RB_table(Cooperating_Cell_index, RB_empty_intersect(RB_maxRSRQ_index))    = 1;
-				BS_RB_who_used(Cooperating_Cell_index, RB_empty_intersect(RB_maxRSRQ_index)) = idx_UE;
+				BS_RB_table(Serving_Cell_index, RB_empty_intersect(RB_maxSINR_index))        = 1;				
+				BS_RB_who_used(Serving_Cell_index, RB_empty_intersect(RB_maxSINR_index))     = idx_UE;
+				BS_RB_table(Cooperating_Cell_index, RB_empty_intersect(RB_maxSINR_index))    = 1;
+				BS_RB_who_used(Cooperating_Cell_index, RB_empty_intersect(RB_maxSINR_index)) = idx_UE;
 
-				UE_RB_used(idx_UE, RB_empty_intersect(RB_maxRSRQ_index)) = 1;
+				UE_RB_used(idx_UE, RB_empty_intersect(RB_maxSINR_index)) = 1;
 
 				UE_throughput_CoMP = UE_throughput_CoMP + RB_throughput;
 
-				RB_RSRQ_intersect(RB_maxRSRQ_index)  = [];
-				RB_empty_intersect(RB_maxRSRQ_index) = [];
+				RB_SINR_intersect(RB_maxSINR_index)  = [];
+				RB_empty_intersect(RB_maxSINR_index) = [];
 		    end
 		end
 	end
@@ -110,8 +110,8 @@ if (isempty(RB_empty_intersect) == 1) && (UE_throughput_CoMP < GBR)
 	
 	RB_Cooperating_need_to_move = intersect(RB_Serving_Cell_empty, RB_Cooperating_someone_used);  % Serving Cell沒有使用，但Cooperating Cell有用的 RB
 
-	% 這些RB位置如果拿來做CoMP，所提供的RSRQ是多少
-	RB_RSRQ_need_to_move = zeros(1, length(RB_Cooperating_need_to_move));
+	% 這些RB位置如果拿來做CoMP，所提供的SINR是多少
+	RB_SINR_need_to_move = zeros(1, length(RB_Cooperating_need_to_move));
 
 	if (isempty(RB_Cooperating_need_to_move) == 1)
 		% 全部都被占光光，只能放棄你了
@@ -119,7 +119,7 @@ if (isempty(RB_empty_intersect) == 1) && (UE_throughput_CoMP < GBR)
 		BS_RB_who_used = temp_BS_RB_who_used;
 		UE_RB_used     = temp_UE_RB_used;
 	else
-		% 這些可以拿的RB，最後要算出每一塊如果做CoMP後，可以提供的RSRQ
+		% 這些可以拿的RB，最後要算出每一塊如果做CoMP後，可以提供的SINR
 		for RB_index = 1:1:length(RB_Cooperating_need_to_move)   
 			RB_Total_Interference = 0;
 			for BS_index = 1:1:(n_MC + n_PC)
@@ -138,7 +138,7 @@ if (isempty(RB_empty_intersect) == 1) && (UE_throughput_CoMP < GBR)
 				end 
 			end
 			RB_Total_Interference          = (sqrt(RB_Total_Interference) + AMP_Noise)^2;  % 全部加好後還要加上白雜訊  [watt]
-			RB_RSRQ_need_to_move(RB_index) = (Serving_Cell_RSRP_watt_perRB + Cooperating_Cell_RSRP_watt_perRB)*(1/(RB_Total_Interference + Serving_Cell_RSRP_watt_perRB + Cooperating_Cell_RSRP_watt_perRB)); % CoMP: 兩邊Cell的Power加起來
+			RB_SINR_need_to_move(RB_index) = (Serving_Cell_RSRP_watt_perRB + Cooperating_Cell_RSRP_watt_perRB)/RB_Total_Interference; % CoMP: 兩邊Cell的Power加起來
 		end
 
 		while UE_throughput_CoMP < GBR
@@ -149,9 +149,9 @@ if (isempty(RB_empty_intersect) == 1) && (UE_throughput_CoMP < GBR)
 				UE_RB_used     = temp_UE_RB_used;			
 				break;
 			else
-				[RB_maxRSRQ_value_CoMP, RB_maxRSRQ_index_CoMP] = max(RB_RSRQ_need_to_move);  % UE找到哪一個RB拿來做CoMP會最好，但其實這個RB在Cooperating   Cell是有人使用的，所以要叫佔住的人移到  Cooperating Cell其他空的RB上
+				[RB_maxSINR_value_CoMP, RB_maxSINR_index_CoMP] = max(RB_SINR_need_to_move);  % UE找到哪一個RB拿來做CoMP會最好，但其實這個RB在Cooperating   Cell是有人使用的，所以要叫佔住的人移到  Cooperating Cell其他空的RB上
 
-				RB_throughput = BW_PRB*MCS_3GPP36942(RB_maxRSRQ_value_CoMP);	
+				RB_throughput = BW_PRB*MCS_3GPP36942(RB_maxSINR_value_CoMP);	
 				
 				if RB_throughput == 0 % 拿最好的來做CoMP，Throughpu還是= 0 ---> 離兩個Cell太遠了
 					BS_RB_table    = temp_BS_RB_table;					
@@ -159,7 +159,7 @@ if (isempty(RB_empty_intersect) == 1) && (UE_throughput_CoMP < GBR)
 					UE_RB_used     = temp_UE_RB_used;			
 					break;
 				else
-					UE_index_need_to_move = BS_RB_who_used(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP)); % 抓到在Cooperating Cell使用這個RB的UE了
+					UE_index_need_to_move = BS_RB_who_used(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP)); % 抓到在Cooperating Cell使用這個RB的UE了
 
 					% 該UE把該RB換到其他空的地方，比較看看哪個Throughput  可以滿足QoS
 					RB_Cooperating_empty       = find(BS_RB_table(Cooperating_Cell_index, 1:Pico_part)  == 0); % UE可以換RB的地方
@@ -170,15 +170,15 @@ if (isempty(RB_empty_intersect) == 1) && (UE_throughput_CoMP < GBR)
 					temp_change_BS_RB_who_used = BS_RB_who_used; % 暫存用
 
 					for change_index = 1:1:length(RB_Cooperating_empty)
-						% 把計畫放掉的RB給放掉
-						UE_RB_used(UE_index_need_to_move, RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP))      = 0;
-						BS_RB_table(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP))    = 0;
-						BS_RB_who_used(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP)) = 0;				
+						% 把計畫放掉的RB給放掉						
+						BS_RB_table(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP))    = 0;
+						BS_RB_who_used(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP)) = 0;	
+						UE_RB_used(UE_index_need_to_move, RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP))      = 0;			
 
-						% 把換過去要拿的RB拿起來
-						UE_RB_used(UE_index_need_to_move, RB_Cooperating_empty(change_index))      = 1;
+						% 把換過去要拿的RB拿起來						
 						BS_RB_table(Cooperating_Cell_index, RB_Cooperating_empty(change_index))    = 1;
-						BS_RB_who_used(Cooperating_Cell_index, RB_Cooperating_empty(change_index)) = UE_index_need_to_move;				
+						BS_RB_who_used(Cooperating_Cell_index, RB_Cooperating_empty(change_index)) = UE_index_need_to_move;		
+						UE_RB_used(UE_index_need_to_move, RB_Cooperating_empty(change_index))      = 1;		
 
 						% 把換過去後的UE  Throughput算出來
 
@@ -192,7 +192,7 @@ if (isempty(RB_empty_intersect) == 1) && (UE_throughput_CoMP < GBR)
 						RB_we_take = find(UE_RB_used(UE_index_need_to_move, 1:1:Pico_part) == 1);
 						for RB_index = 1:1:length(RB_we_take)   % 這些可以丟的RB，最後要算出每一塊所提供的  Throughput
 							RB_Total_Interference = 0;
-							RB_RSRQ       = 0;			
+							RB_SINR       = 0;			
 							for BS_index = 1:1:(n_MC + n_PC)
 								if BS_index ~= Cooperating_Cell_index
 									if BS_index <= n_MC
@@ -219,8 +219,8 @@ if (isempty(RB_empty_intersect) == 1) && (UE_throughput_CoMP < GBR)
 								end
 							end
 							RB_Total_Interference                    = (sqrt(RB_Total_Interference) + AMP_Noise)^2; % 全部加好後還要加上白雜訊  [watt]
-							RB_RSRQ                                  = Rsrp_watt_perRB*(1/(RB_Total_Interference + Rsrp_watt_perRB));
-							RB_after_change_throughput(change_index) = RB_after_change_throughput(change_index) + BW_PRB*MCS_3GPP36942(RB_RSRQ);
+							RB_SINR                                  = Rsrp_watt_perRB/RB_Total_Interference;
+							RB_after_change_throughput(change_index) = RB_after_change_throughput(change_index) + BW_PRB*MCS_3GPP36942(RB_SINR);
 						end
 						BS_RB_table    = temp_change_BS_RB_table;
 						UE_RB_used     = temp_change_UE_RB_used;
@@ -231,31 +231,31 @@ if (isempty(RB_empty_intersect) == 1) && (UE_throughput_CoMP < GBR)
 
 					if RB_maxThroughput_value_after_other_move < GBR
 						% 這個人換沒有用，UE要去找下一個人
-						RB_RSRQ_need_to_move(RB_maxRSRQ_index_CoMP)        = [];
-						RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP) = [];
+						RB_SINR_need_to_move(RB_maxSINR_index_CoMP)        = [];
+						RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP) = [];
 					else
 						% OK了 --> 互相找到目標RB
 
 						% 先把要移動的RB先移過去
-						UE_RB_used(UE_index_need_to_move, RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP))      = 0;
-						BS_RB_table(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP))    = 0;
-						BS_RB_who_used(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP)) = 0;
+						UE_RB_used(UE_index_need_to_move, RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP))      = 0;
+						BS_RB_table(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP))    = 0;
+						BS_RB_who_used(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP)) = 0;
 
 						UE_RB_used(UE_index_need_to_move, RB_Cooperating_empty(RB_maxThroughput_index_after_other_move))      = 1;
 						BS_RB_table(Cooperating_Cell_index, RB_Cooperating_empty(RB_maxThroughput_index_after_other_move))    = 1;
 						BS_RB_who_used(Cooperating_Cell_index, RB_Cooperating_empty(RB_maxThroughput_index_after_other_move)) = UE_index_need_to_move;
 
 						% 把要做CoMP的RB拿起來
-						UE_RB_used(idx_UE, RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP))                     = 1;
-						BS_RB_table(Serving_Cell_index, RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP))        = 1;				
-						BS_RB_who_used(Serving_Cell_index, RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP))     = idx_UE;
-						BS_RB_table(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP))    = 1;
-						BS_RB_who_used(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP)) = idx_UE;
+						UE_RB_used(idx_UE, RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP))                     = 1;
+						BS_RB_table(Serving_Cell_index, RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP))        = 1;				
+						BS_RB_who_used(Serving_Cell_index, RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP))     = idx_UE;
+						BS_RB_table(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP))    = 1;
+						BS_RB_who_used(Cooperating_Cell_index, RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP)) = idx_UE;
 
 						UE_throughput_CoMP = UE_throughput_CoMP + RB_throughput;
 
-						RB_RSRQ_need_to_move(RB_maxRSRQ_index_CoMP)        = [];
-						RB_Cooperating_need_to_move(RB_maxRSRQ_index_CoMP) = [];
+						RB_SINR_need_to_move(RB_maxSINR_index_CoMP)        = [];
+						RB_Cooperating_need_to_move(RB_maxSINR_index_CoMP) = [];
 					end
 				end
 			end
