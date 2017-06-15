@@ -88,7 +88,7 @@ if isempty(RB_DRS) == 0 % 有交集進來算
 				BS_RB_who_used(Serving_Cell_index, RB_DRS(RB_maxSINR_index))     = idx_UE;
 				BS_RB_table(Cooperating_Cell_index, RB_DRS(RB_maxSINR_index))    = 1;
 				BS_RB_who_used(Cooperating_Cell_index, RB_DRS(RB_maxSINR_index)) = idx_UE;
-				UE_RB_used(idx_UE, RB_DRS(RB_maxSINR_index)) 　　　　　　　　　　= 1;
+				UE_RB_used(idx_UE, RB_DRS(RB_maxSINR_index))                     = 1;
 
 				UE_throughput_CoMP = UE_throughput_CoMP + RB_throughput;
 
@@ -166,7 +166,7 @@ if (isempty(RB_DRS) == 1) && (UE_throughput_CoMP < GBR)
 					BS_RB_who_used(Serving_Cell_index, RB_UE_might_CoMP(UE_might_CoMP_RB_maxSINR_index))     = idx_UE;
 					BS_RB_table(Cooperating_Cell_index, RB_UE_might_CoMP(UE_might_CoMP_RB_maxSINR_index))    = 1;
 					BS_RB_who_used(Cooperating_Cell_index, RB_UE_might_CoMP(UE_might_CoMP_RB_maxSINR_index)) = idx_UE;
-					UE_RB_used(idx_UE, RB_UE_might_CoMP(UE_might_CoMP_RB_maxSINR_index)) 　　　　　　　　　　= 1;
+					UE_RB_used(idx_UE, RB_UE_might_CoMP(UE_might_CoMP_RB_maxSINR_index))                     = 1;
 
 					UE_throughput_CoMP = UE_throughput_CoMP + RB_throughput;
 
@@ -261,7 +261,7 @@ if (isempty(RB_DRS) == 1) && (UE_throughput_CoMP < GBR)
 						BS_RB_who_used(Serving_Cell_index, RB_UE_might_CoMP(UE_might_CoMP_RB_maxSINR_index))     = idx_UE;
 						BS_RB_table(Cooperating_Cell_index, RB_UE_might_CoMP(UE_might_CoMP_RB_maxSINR_index))    = 1;
 						BS_RB_who_used(Cooperating_Cell_index, RB_UE_might_CoMP(UE_might_CoMP_RB_maxSINR_index)) = idx_UE;
-						UE_RB_used(idx_UE, RB_UE_might_CoMP(UE_might_CoMP_RB_maxSINR_index)) 　　　　　　　　　　= 1;
+						UE_RB_used(idx_UE, RB_UE_might_CoMP(UE_might_CoMP_RB_maxSINR_index))                     = 1;
 
 						UE_throughput_CoMP = UE_throughput_CoMP + RB_throughput;
 

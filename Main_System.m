@@ -763,7 +763,6 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 																																	idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);																											
 							
 						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-
 					end 
 
 					% ----------------------------------------------------------------- %
