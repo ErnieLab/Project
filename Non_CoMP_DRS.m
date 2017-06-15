@@ -3,7 +3,7 @@
 % =================================================================== %
 function [BS_RB_table_output, BS_RB_who_used_output, UE_RB_used_output, UE_throughput_After_Scheduling] = Non_CoMP_DRS(BS_lct, n_MC, n_PC, P_MC_dBm, P_PC_dBm, BS_RB_table, BS_RB_who_used, UE_lct, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 																													   idx_UE, Serving_Cell_index, Target_Cell_index, UE_throughput, ...
-																													   GBR, BW_PRB)
+																													   GBR, BW_PRB, UE_CoMP_orNOT)
 
 % ------- %
 % Initial %
@@ -16,7 +16,7 @@ end
 
 Target_Cell_used = find(BS_RB_table(Target_Cell_index, 1:1:Pico_part) == 1); % Target Cell已經再使用的RB，下面會把正在給人家做CoMP的RB給砍掉
 for RB_index = 1:1:length(Target_Cell_used)
-	if UE_CoMP_orNOT(BS_RB_who_used(Cooperating_Cell_index, Target_Cell_used(RB_index))) == 1
+	if UE_CoMP_orNOT(BS_RB_who_used(Target_Cell_index, Target_Cell_used(RB_index))) == 1
 		Target_Cell_used(RB_index) = 0;
 	end
 end
@@ -64,7 +64,7 @@ while UE_throughput < GBR
 	else
 		[~, might_move_RB_minSINR_index] = min(might_move_these_RB_SINR);  % 這個是Target Cell準備要移走的RB
 
-		User_index_occupy_target_might_move_RB = BS_RB_who_used(Target_Cell_index, might_move_these_RB_SINR(might_move_RB_minSINR_index)); % 佔住準備要移走的RB的UE
+		User_index_occupy_target_might_move_RB = BS_RB_who_used(Target_Cell_index, Target_might_move_these_RB(might_move_RB_minSINR_index)); % 佔住準備要移走的RB的UE
 
 		% 這裡是再算Target Cell打給該user的power
 		dis_berween_user_target = norm(UE_lct(User_index_occupy_target_might_move_RB,:) - BS_lct(Target_Cell_index,:));
@@ -74,9 +74,9 @@ while UE_throughput < GBR
 		user_rsrp_watt_perRB    = user_rsrp_watt/Pico_part;
 
 		% 要被移動RB的user，放掉該RB
-		BS_RB_table(Target_Cell_index, might_move_these_RB_SINR(might_move_RB_minSINR_index))                     = 0;
-		BS_RB_who_used(Target_Cell_index, might_move_these_RB_SINR(might_move_RB_minSINR_index))                  = 0;
-		UE_RB_used(User_index_occupy_target_might_move_RB, might_move_these_RB_SINR(might_move_RB_minSINR_index)) = 0;
+		BS_RB_table(Target_Cell_index, Target_might_move_these_RB(might_move_RB_minSINR_index))                     = 0;
+		BS_RB_who_used(Target_Cell_index, Target_might_move_these_RB(might_move_RB_minSINR_index))                  = 0;
+		UE_RB_used(User_index_occupy_target_might_move_RB, Target_might_move_these_RB(might_move_RB_minSINR_index)) = 0;
 
 		% 接下來該user要去佔其他空的RB，看能不能繼續維持QoS
 		Target_Cell_empty                   = find(BS_RB_table(Target_Cell_index, 1:1:Pico_part) == 0); % 把Target Cell沒有使用的抓出來，準備換過去的候選RB
@@ -108,7 +108,7 @@ while UE_throughput < GBR
 							end
 						else
 							if BS_RB_table(BS_index, RB_user_take(RB_index)) == 1 
-								dist_PC           = norm(UE_lct(UE_index_need_to_move,:) - BS_lct(BS_index,:));
+								dist_PC           = norm(UE_lct(User_index_occupy_target_might_move_RB,:) - BS_lct(BS_index,:));
 								RsrpPC_dBm        = P_PC_dBm - PLmodel_3GPP(dist_PC, 'P');
 								RsrpPC_dB         = RsrpPC_dBm - 30;
 								RsrpPC_watt       = 10^(RsrpPC_dB/10);
@@ -135,9 +135,9 @@ while UE_throughput < GBR
 
 		if user_maxThourghput_value < GBR
 			% 換也沒用，RB還來!!!!
-			BS_RB_table(Target_Cell_index, might_move_these_RB_SINR(might_move_RB_minSINR_index))                     = 1;
-			BS_RB_who_used(Target_Cell_index, might_move_these_RB_SINR(might_move_RB_minSINR_index))                  = User_index_occupy_target_might_move_RB;
-			UE_RB_used(User_index_occupy_target_might_move_RB, might_move_these_RB_SINR(might_move_RB_minSINR_index)) = 1;
+			BS_RB_table(Target_Cell_index, Target_might_move_these_RB(might_move_RB_minSINR_index))                     = 1;
+			BS_RB_who_used(Target_Cell_index, Target_might_move_these_RB(might_move_RB_minSINR_index))                  = User_index_occupy_target_might_move_RB;
+			UE_RB_used(User_index_occupy_target_might_move_RB, Target_might_move_these_RB(might_move_RB_minSINR_index)) = 1;
 
 			% 這個RB試過了，結果是換不了，把該RB剃除UE的選取範圍內
 			might_move_these_RB_SINR(might_move_RB_minSINR_index)   = [];
