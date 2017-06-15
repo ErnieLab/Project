@@ -726,7 +726,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 							% 做完Dynamic Resource Scheduling 發現QoS還是不夠，就看看能不能做CoMP，前提是Serving也要是Pico   Cell，如果不是那就沒辦法做CoMP了
 							if UE_Throughput(idx_UE) < GBR
-
+								
 								% --------------------- %
 								% 再看看能不能執行CoMP  %  
 								% --------------------- %
