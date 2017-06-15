@@ -174,7 +174,7 @@ while UE_throughput < GBR
 					end
 				end
 				RB_Total_Interference = (sqrt(RB_Total_Interference) + AMP_Noise)^2; % 全部加好後還要加上白雜訊  [watt]
-				RB_SINR               = Serving_Cell_RSRP_watt_perRB*(1/(RB_Total_Interference + Serving_Cell_RSRP_watt_perRB));
+				RB_SINR               = Serving_Cell_RSRP_watt_perRB/RB_Total_Interference;
 				RB_throuhgput         = BW_PRB*MCS_3GPP36942(RB_SINR);
 
 				UE_throughput = UE_throughput + RB_throuhgput;
