@@ -473,7 +473,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), Dis_Connect_Reason] = NewCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 									                                                                                                               idx_UE, idx_trgt, GBR, BW_PRB);
 									                                                                                                               
-					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+					Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 
 					% -------------------------------------------------------------------- %
 					% 不論UE是死是活，都會再給他一個等待時間，下次她被放棄時就會數這個     %
@@ -599,7 +599,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 						temp_idx_UEcnct_TST = idx_UEcnct_TST(idx_UE); % 暫存的，來紀錄從哪裡handover到哪裡
 						[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), Dis_Handover_Reason] = HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 										                                                                                                                    idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), GBR, BW_PRB);
-						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+						Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 
 						if idx_UEcnct_TST(idx_UE) == idx_trgt
 							% !!!!!!!!!!成功Handvoer到Target Cell!!!!!!!!!!
@@ -670,7 +670,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					% TTT Reset
 					timer_TTT_TST(idx_UE) = t_TTT;
 				end
-				% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+				Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 
                 % ----------------------------------------------------------- %
 				% 如果(1)沒有過A3 Event               __\  就會走以下的流程   %
@@ -696,7 +696,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 							end
 						end
 
-						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+						Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 					end
 
 					% ------------------------------------ %
@@ -707,12 +707,12 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 						[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_throw_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 																										     idx_UE, idx_UEcnct_TST(idx_UE), GBR, BW_PRB);
 
-						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+						Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 					end
 
-					% ------------------------------------------- %
-					% 先看看能不能執行Dynamic Resource Scheduling % 
-					% ------------------------------------------- %
+					% -------------------------------------------- %
+					% 先看看能不能執行Dynamic  Resource Scheduling % 
+					% -------------------------------------------- %
 					if UE_Throughput(idx_UE) < GBR
 						if idx_trgt > n_MC
 							% Dynamic Resource Scheduling
@@ -721,7 +721,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 																												idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
 																												GBR, BW_PRB, UE_CoMP_orNOT);
 
-								% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+								Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 							end							
 
 							% 做完Dynamic Resource Scheduling 發現QoS還是不夠，就看看能不能做CoMP，前提是Serving也要是Pico   Cell，如果不是那就沒辦法做CoMP了
@@ -744,7 +744,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 											 																																				    idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
 											 																																				    GBR, BW_PRB, idx_UEcnct_CoMP, UE_CoMP_orNOT);
 											
-											% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+											Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 											if UE_CoMP_orNOT(idx_UE) == 1
 												Success_Enter_CoMP_times = Success_Enter_CoMP_times + 1;
 											end	
@@ -762,7 +762,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 						[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = Non_CoMP_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 																																	idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);																											
 							
-						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+						Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 					end 
 
 					% ----------------------------------------------------------------- %
@@ -897,7 +897,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 						end						
 					end
 				end
-				% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+				Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 
 				% --------------------------------- %
 				% 主要統計: 檢查Ping-Pong有沒有發生 %
@@ -971,7 +971,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					Dis_Connect_Reason = 0;
 				end
 
-				% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+				Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 			end 
 
 			if UE_CoMP_orNOT(idx_UE) == 1
@@ -1014,7 +1014,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 																										  idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), UE_Throughput(idx_UE), GBR, BW_PRB);
 					end
 
-					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+					Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 				end
 
 				% ----------------------------------- %
@@ -1024,7 +1024,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = CoMP_throw_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 																									 idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), GBR, BW_PRB);
 
-					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+					Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 				end
 
 				% ------------------------------------------------------------ %
@@ -1035,7 +1035,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 																														idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), UE_Throughput(idx_UE), ...
 																														GBR, BW_PRB, UE_CoMP_orNOT);
 
-					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+					Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 				end
 
 				% ----------------------------------------------------------------- %
@@ -1203,7 +1203,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 				end				
 			end
 
-			% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+			Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 		end
 
 		% ========================================================================================================================== %
