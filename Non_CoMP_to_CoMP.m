@@ -109,8 +109,10 @@ if (isempty(RB_DRS) == 1) && (UE_throughput_CoMP < GBR)
 
 	% 如果Cooperating　Cell有用這些RB來做CoMP，先砍掉，因為無法移動已經在做CoMP的RB
 	for RB_index = 1:1:length(RB_UE_might_CoMP)
-		if UE_CoMP_orNOT(BS_RB_who_used(Cooperating_Cell_index, RB_UE_might_CoMP(RB_index))) == 1
-			RB_UE_might_CoMP(RB_index) = 0;
+		if BS_RB_table(Cooperating_Cell_index, RB_UE_might_CoMP(RB_index)) == 1
+			if UE_CoMP_orNOT(BS_RB_who_used(Cooperating_Cell_index, RB_UE_might_CoMP(RB_index))) == 1
+				RB_UE_might_CoMP(RB_index) = 0;
+			end
 		end
 	end
 	RB_UE_might_CoMP(find(RB_UE_might_CoMP == 0)) = [];
@@ -183,14 +185,14 @@ if (isempty(RB_DRS) == 1) && (UE_throughput_CoMP < GBR)
 					user_rsrp_watt               = 10^(user_rsrp_dB/10); 
 					user_rsrp_watt_perRB         = user_rsrp_watt/Pico_part;
 
+					% 接下來該user要去佔其他空的RB，看能不能繼續維持QoS
+					Cooperating_Cell_empty                   = find(BS_RB_table(Cooperating_Cell_index, 1:1:Pico_part) == 0); % 把Target Cell沒有使用的抓出來，準備換過去的候選RB
+					User_occupy_cooperating_empty_throughput = zeros(1, length(Cooperating_Cell_empty));
+
 					% 要被移動RB的user，放掉該RB
 					BS_RB_table(Cooperating_Cell_index, RB_UE_might_CoMP(UE_might_CoMP_RB_maxSINR_index))    = 0;
 					BS_RB_who_used(Cooperating_Cell_index, RB_UE_might_CoMP(UE_might_CoMP_RB_maxSINR_index)) = 0;
 					UE_RB_used(User_index_occupy_CoMP_RB, RB_UE_might_CoMP(UE_might_CoMP_RB_maxSINR_index))  = 0;
-
-					% 接下來該user要去佔其他空的RB，看能不能繼續維持QoS
-					Cooperating_Cell_empty                   = find(BS_RB_table(Cooperating_Cell_index, 1:1:Pico_part) == 0); % 把Target Cell沒有使用的抓出來，準備換過去的候選RB
-					User_occupy_cooperating_empty_throughput = zeros(1, length(Cooperating_Cell_empty));
 
 					% 換到每個RB後所得到的Throughput
 					for Empty_index = 1:1:length(Cooperating_Cell_empty)

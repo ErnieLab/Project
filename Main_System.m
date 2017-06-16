@@ -388,7 +388,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 			a = 1;
 		end
 
-		if idx_UE == 175
+		if idx_UE == 137
 			a = 1;
 		end
 
