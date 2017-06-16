@@ -105,7 +105,7 @@ else
 				UE_throughput_After_Handover = 0;
 				Dis_Handover_Reason          = 2;
 				break;
-			else				
+			else
 		    	BS_RB_table(Target_Cell_index, RB_we_can_take(RB_maxSINR_index))    = 1;      % 把該位置記錄說，有人在用了		    	
 		    	BS_RB_who_used(Target_Cell_index, RB_we_can_take(RB_maxSINR_index)) = idx_UE; % 登記一下這RB是idx_UE用的
 		    	UE_RB_used(idx_UE, RB_we_can_take(RB_maxSINR_index))                = 1;      % UE拿了哪些位置的RB，自己也要知道
@@ -113,7 +113,7 @@ else
 		    	UE_throughput_After_Handover = UE_throughput_After_Handover + RB_throughput; % UE的Throughput
 
 		        RB_we_can_take_SINR(RB_maxSINR_index) = [];
-		        RB_we_can_take(RB_maxSINR_index)      = [];		        
+		        RB_we_can_take(RB_maxSINR_index)      = [];
 			end
 		end
 	end

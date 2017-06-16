@@ -334,6 +334,8 @@ CBR_BS_TST 		           = zeros(1, n_BS);			   % KPI: Call Block Rate
 CDR_BS_TST 		           = zeros(1, n_BS);			   % KPI: Outage Probability 2016.11.15 -> Call Drop Rate 2017.01.04
 
 BS_RB_consumption          = zeros(1, n_BS);               % 每個Base Station在這段時間所使用的RB數
+
+BS_last_time_serving       = zeros(1, n_BS);               % 上個state服務的人
 	
 UE_survive                 = 0;                            % UE平均存活人數
 
@@ -377,6 +379,18 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 	AMP_Noise  = LTE_NoiseFloor_watt * abs(randn(1));                            % 每個時間點的白高斯 雜訊都不一樣 [watt/RB]
 
+    BS_last_time_serving(1,:) = 0;
+	for UE_index = 1:1:n_UE
+		if UE_CoMP_orNOT(UE_index) == 0
+			if idx_UEcnct_TST(UE_index) ~= 0 
+				BS_last_time_serving(idx_UEcnct_TST(UE_index)) = BS_last_time_serving(idx_UEcnct_TST(UE_index)) + 1;
+			end
+		else
+			if idx_UEcnct_TST(UE_index) ~= 0 
+				BS_last_time_serving(idx_UEcnct_TST(UE_index)) = BS_last_time_serving(idx_UEcnct_TST(UE_index)) + 0.5;
+			end
+		end
+	end
 
 	% Loop 2: User	
 	% 寫收訊號的，A3 event，統計各個Performance，關係到RB 的要自己來 ( 細胞loading的問題, UE's SINR計算 )
@@ -384,11 +398,10 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		Dis_Connect_Reason  = 0;
 		Dis_Handover_Reason = 0;
 
-		if idx_t >= 0.2
+		if idx_t >= 50
 			a = 1;
 		end
-
-		if idx_UE == 137
+		if idx_UE == 64
 			a = 1;
 		end
 
@@ -473,7 +486,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), Dis_Connect_Reason] = NewCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 									                                                                                                               idx_UE, idx_trgt, GBR, BW_PRB);
 									                                                                                                               
-					Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 
 					% -------------------------------------------------------------------- %
 					% 不論UE是死是活，都會再給他一個等待時間，下次她被放棄時就會數這個     %
@@ -599,7 +612,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 						temp_idx_UEcnct_TST = idx_UEcnct_TST(idx_UE); % 暫存的，來紀錄從哪裡handover到哪裡
 						[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), Dis_Handover_Reason] = HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 										                                                                                                                    idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), GBR, BW_PRB);
-						Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 
 						if idx_UEcnct_TST(idx_UE) == idx_trgt
 							% !!!!!!!!!!成功Handvoer到Target Cell!!!!!!!!!!
@@ -670,7 +683,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					% TTT Reset
 					timer_TTT_TST(idx_UE) = t_TTT;
 				end
-				Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+				% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 
                 % ----------------------------------------------------------- %
 				% 如果(1)沒有過A3 Event               __\  就會走以下的流程   %
@@ -696,7 +709,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 							end
 						end
 
-						Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 					end
 
 					% ------------------------------------ %
@@ -707,7 +720,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 						[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_throw_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 																										     idx_UE, idx_UEcnct_TST(idx_UE), GBR, BW_PRB);
 
-						Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 					end
 
 					% -------------------------------------------- %
@@ -721,7 +734,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 																												idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
 																												GBR, BW_PRB, UE_CoMP_orNOT);
 
-								Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+								% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 							end							
 
 							% 做完Dynamic Resource Scheduling 發現QoS還是不夠，就看看能不能做CoMP，前提是Serving也要是Pico   Cell，如果不是那就沒辦法做CoMP了
@@ -744,7 +757,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 											 																																				    idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
 											 																																				    GBR, BW_PRB, idx_UEcnct_CoMP, UE_CoMP_orNOT);
 											
-											Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+											% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 											if UE_CoMP_orNOT(idx_UE) == 1
 												Success_Enter_CoMP_times = Success_Enter_CoMP_times + 1;
 											end	
@@ -762,7 +775,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 						[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = Non_CoMP_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 																																	idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);																											
 							
-						Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 					end 
 
 					% ----------------------------------------------------------------- %
@@ -897,7 +910,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 						end						
 					end
 				end
-				Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+				% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 
 				% --------------------------------- %
 				% 主要統計: 檢查Ping-Pong有沒有發生 %
@@ -971,7 +984,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					Dis_Connect_Reason = 0;
 				end
 
-				Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+				% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 			end 
 
 			if UE_CoMP_orNOT(idx_UE) == 1
@@ -1014,7 +1027,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 																										  idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), UE_Throughput(idx_UE), GBR, BW_PRB);
 					end
 
-					Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 				end
 
 				% ----------------------------------- %
@@ -1024,7 +1037,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = CoMP_throw_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 																									 idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), GBR, BW_PRB);
 
-					Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 				end
 
 				% ------------------------------------------------------------ %
@@ -1035,7 +1048,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 																														idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), UE_Throughput(idx_UE), ...
 																														GBR, BW_PRB, UE_CoMP_orNOT);
 
-					Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 				end
 
 				% ----------------------------------------------------------------- %
@@ -1203,7 +1216,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 				end				
 			end
 
-			Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+			% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 		end
 
 		% ========================================================================================================================== %
@@ -1275,9 +1288,9 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 			end
 		end
 
-    end 
-    % 結束Loop 2(UE的Loop)
+    end
 
+    % 結束Loop 2(UE的Loop)
     % ======================== %
     % 算Macro跟Pico的服務人數  %
     % ======================== %
@@ -1316,8 +1329,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 	% ======================================== %
     % 算BS的Call Block Rate and Call Drop Rate %
-	% ======================================== %	
-	
+	% ======================================== %
 	for idx_BS = 1:n_BS
 		% BS Call Block Rate
 		if n_DeadUE_BS(idx_BS) == 0 && n_LiveUE_BS(idx_BS) == 0    % 如果沒有人把該BS 當目標，該BS 的CBR = 0
@@ -1330,7 +1342,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		if isempty(find(idx_UEcnct_TST == idx_BS)) == 1 && CDR_BS(idx_BS) == 0
 			CDR_BS_TST(idx_BS) = 0;
 		else
-			CDR_BS_TST(idx_BS) = CDR_BS(idx_BS) / (CDR_BS(idx_BS) + length(find(idx_UEcnct_TST == idx_BS)) + length(find(idx_UEcnct_CoMP == idx_BS))*(1/2));
+			CDR_BS_TST(idx_BS) = CDR_BS(idx_BS) / (CDR_BS(idx_BS) + BS_last_time_serving(idx_BS));
 		end
 	end
 

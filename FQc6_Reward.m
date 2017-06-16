@@ -2,7 +2,7 @@
 
 function reward = FQc6_Reward(LOAD,CBR,CDR,type)
 
-	WGT = [2, 1, 6];  %自訂reward的weight(選用模擬結果最好的一組weight)
+	WGT = [1, 0, 4];  %自訂reward的weight(選用模擬結果最好的一組weight)
 
     switch(type)  %設計4種獎勵函式，模擬結果顯示第3種效能較好，所以我們選用第3種case
 		

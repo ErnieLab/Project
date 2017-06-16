@@ -362,6 +362,19 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 
 	AMP_Noise  = LTE_NoiseFloor_watt * randn(1);                            % 每個時間點的白高斯 雜訊都不一樣 [watt/RB]
 
+    BS_last_time_serving(1,:) = 0;
+	for UE_index = 1:1:n_UE
+		if UE_CoMP_orNOT(UE_index) == 0
+			if idx_UEcnct_TST(UE_index) ~= 0 
+				BS_last_time_serving(idx_UEcnct_TST(UE_index)) = BS_last_time_serving(idx_UEcnct_TST(UE_index)) + 1;
+			end
+		else
+			if idx_UEcnct_TST(UE_index) ~= 0 
+				BS_last_time_serving(idx_UEcnct_TST(UE_index)) = BS_last_time_serving(idx_UEcnct_TST(UE_index)) + 0.5;
+			end
+		end
+	end
+
 
 	% Loop 2: User	
 	% 寫收訊號的，A3 event，統計各個Performance，關係到RB 的要自己來 ( 細胞loading的問題, UE's SINR計算 )
@@ -369,9 +382,13 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 		Dis_Connect_Reason  = 0;
 		Dis_Handover_Reason = 0;
 
-		if idx_UE == 202
+		if idx_t >= 5.9
 			a = 1;
 		end
+		if idx_UE == 268
+			a = 1;
+		end
+
 
 		% ============================================================================================= %
 		%                    ________                             \                    ___              %
@@ -972,7 +989,7 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 		if isempty(find(idx_UEcnct_TST == idx_BS)) == 1 && CDR_BS(idx_BS) == 0
 			CDR_BS_TST(idx_BS) = 0;
 		else
-			CDR_BS_TST(idx_BS) = CDR_BS(idx_BS) / (CDR_BS(idx_BS) + length(find(idx_UEcnct_TST == idx_BS)));
+			CDR_BS_TST(idx_BS) = CDR_BS(idx_BS) / (CDR_BS(idx_BS) + BS_last_time_serving(idx_BS));
 		end
 	end
 
