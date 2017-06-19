@@ -1,8 +1,8 @@
-% ======================================================== %
-% 該function是用來讓**Handover Call**的UE，根據SINR來拿RB  %
-% ======================================================== %
-function [BS_RB_table_output, BS_RB_who_used_output, UE_RB_used_output, idx_UEcnct_TST, UE_throughput_After_take, Dis_Handover_Reason] = HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-										                                                                                                                     idx_UE, Serving_Cell_index, Target_Cell_index, UE_Throughput, GBR, BW_PRB)
+% ================================================================= %
+% 該function是用來讓**Non-CoMP Handover Call**的UE，根據SINR來拿RB  %
+% ================================================================= %
+function [BS_RB_table_output, BS_RB_who_used_output, UE_RB_used_output, idx_UEcnct_TST, UE_throughput_After_take, Dis_Handover_Reason] = Non_CoMP_HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+													                                                                                                                   idx_UE, Serving_Cell_index, Target_Cell_index, UE_Throughput, GBR, BW_PRB)
 
 % ----------------------------------------- %
 % 暫存用，如果要不到RB，要恢復成原本的樣子  %
