@@ -9,8 +9,8 @@ function [BS_RB_table_output, BS_RB_who_used_output, UE_RB_used_output, idx_UEcn
 % 先把該UE的RB存取狀況給存起來，不能離開CoMP的時候也是要把原本的狀況還給人家     %
 % ------------------------------------------------------------------------------ %
 temp_BS_RB_table     = BS_RB_table;
-temp_UE_RB_used      = UE_RB_used;
 temp_BS_RB_who_used  = BS_RB_who_used;
+temp_UE_RB_used      = UE_RB_used;
 temp_idx_UEcnct_CoMP = idx_UEcnct_CoMP;
 temp_UE_throughput   = UE_throughput;
 
