@@ -394,18 +394,6 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 			a = 1;
 		end
 
-		% 這裡是在處理BS 的CDR
-		if UE_CoMP_orNOT(idx_UE) == 0
-			if idx_UEcnct_TST(idx_UE) ~= 0 
-				BS_last_time_serving(idx_UEcnct_TST(idx_UE)) = BS_last_time_serving(idx_UEcnct_TST(idx_UE)) + 1;
-			end
-		else
-			if idx_UEcnct_CoMP(idx_UE, 1) ~= 0 && idx_UEcnct_CoMP(idx_UE, 2) ~= 0
-				BS_last_time_serving(idx_UEcnct_CoMP(idx_UE, 1)) = BS_last_time_serving(idx_UEcnct_CoMP(idx_UE, 1)) + 0.5;
-				BS_last_time_serving(idx_UEcnct_CoMP(idx_UE, 2)) = BS_last_time_serving(idx_UEcnct_CoMP(idx_UE, 2)) + 0.5;
-			end
-		end
-
 		% ============================================================================================= %
 		%                    ________                             \                    ___              %
 		%   |          |    |                  |    /            __\__ _______        |   |      |__    %
@@ -462,7 +450,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 			if idx_UEcnct_TST(idx_UE) == 0						 
 				idx_UEprey_TST(idx_UE) = idx_trgt;			 
 			else                             				     
-				idx_UEprey_TST(idx_UE) = 0;                      
+				idx_UEprey_TST(idx_UE) = idx_UEcnct_TST(idx_UE);                      
 			end
 
 			% ----------------- %
@@ -1166,7 +1154,8 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 					% 順利離開CoMP到Serving Cell，P2P_CoMP+1
 					if idx_UEcnct_TST(idx_UE) == temp_Serving
-						n_HO_P2P_CoMP = n_HO_P2P_CoMP + 1;
+						n_HO_BS_TST(temp_Serving) = n_HO_BS_TST(temp_Serving) + 1;	% Only for target cell
+						n_HO_P2P_CoMP             = n_HO_P2P_CoMP + 1;
 					end
 
 					% Success Leave CoMP 記上一筆
@@ -1335,39 +1324,39 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		% 	end
 		% end
 
-		% if temp_CoMP_state == 0
-		% 	if UE_CoMP_orNOT(idx_UE) == 0-
+		if temp_CoMP_state == 0
+			if UE_CoMP_orNOT(idx_UE) == 0
 
-		% 		% 原本沒做CoMP，後來也沒有做CoMP				
-		% 		if idx_UEprey_TST(idx_UE) ~= 0     % 該UE是有預期的連線目標，正常都會有
-		% 			if idx_UEcnct_TST(idx_UE) == 0 % UE有預期目標，但最後卻沒有Serving  Cell
-		% 				n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
+				% 原本沒做CoMP，後來也沒有做CoMP				
+				if idx_UEprey_TST(idx_UE) ~= 0     % 該UE是有預期的連線目標，正常都會有
+					if idx_UEcnct_TST(idx_UE) == 0 % UE有預期目標，但最後卻沒有Serving  Cell
+						n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
 
-		% 			else % idx_UEcnct_TST(idx_UE) ~= 0
-		% 				n_LiveUE_BS(idx_UEprey_TST(idx_UE)) = n_LiveUE_BS(idx_UEprey_TST(idx_UE)) + 1;
-		% 			end
-		% 		else
-		% 			fprintf('BS_CBR calculation BUG\n');
-		% 		end	
-		% 	else
-		% 		% 原本沒做CoMP，後來有做CoMP	
-		% 		n_LiveUE_BS(idx_UEcnct_CoMP(idx_UE, 1)) = n_LiveUE_BS(idx_UEcnct_CoMP(idx_UE, 1)) + 0.5;
-		% 		n_LiveUE_BS(idx_UEcnct_CoMP(idx_UE, 2)) = n_LiveUE_BS(idx_UEcnct_CoMP(idx_UE, 2)) + 0.5;
-		% 	end
-		% else
-		% 	if UE_CoMP_orNOT(idx_UE) == 0
-		% 		if idx_UEcnct_TST(idx_UE) == 0
-		% 			n_DeadUE_BS(temp_Serving) = n_DeadUE_BS(temp_Serving) + 0.5;
-		% 			n_DeadUE_BS(temp_Cooperating) = n_DeadUE_BS(temp_Cooperating) + 0.5;
-		% 		else
-		% 			n_LiveUE_BS(temp_Serving) = n_LiveUE_BS(temp_Serving) + 1;
-		% 		end
+					else % idx_UEcnct_TST(idx_UE) ~= 0
+						n_LiveUE_BS(idx_UEprey_TST(idx_UE)) = n_LiveUE_BS(idx_UEprey_TST(idx_UE)) + 1;
+					end
+				else
+					fprintf('BS_CBR calculation BUG\n');
+				end	
+			else
+				% 原本沒做CoMP，後來有做CoMP	
+				n_LiveUE_BS(idx_UEcnct_CoMP(idx_UE, 1)) = n_LiveUE_BS(idx_UEcnct_CoMP(idx_UE, 1)) + 0.5;
+				n_LiveUE_BS(idx_UEcnct_CoMP(idx_UE, 2)) = n_LiveUE_BS(idx_UEcnct_CoMP(idx_UE, 2)) + 0.5;
+			end
+		else
+			if UE_CoMP_orNOT(idx_UE) == 0
+				if idx_UEcnct_TST(idx_UE) == 0
+					n_DeadUE_BS(temp_Serving) = n_DeadUE_BS(temp_Serving) + 0.5;
+					n_DeadUE_BS(temp_Cooperating) = n_DeadUE_BS(temp_Cooperating) + 0.5;
+				else
+					n_LiveUE_BS(temp_Serving) = n_LiveUE_BS(temp_Serving) + 1;
+				end
 
-		% 	else
-		% 		n_LiveUE_BS(temp_Serving)     = n_LiveUE_BS(temp_Serving) + 0.5;
-		% 		n_LiveUE_BS(temp_Cooperating) = n_LiveUE_BS(temp_Cooperating) + 0.5;
-		% 	end	
-		% end
+			else
+				n_LiveUE_BS(temp_Serving)     = n_LiveUE_BS(temp_Serving) + 0.5;
+				n_LiveUE_BS(temp_Cooperating) = n_LiveUE_BS(temp_Cooperating) + 0.5;
+			end	
+		end
 
 		% ============================================================================================ %
 		%                    ________          /                     |                      |          %
@@ -1450,19 +1439,16 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		end
 
 		% BS Call Drop Rate
-		if BS_last_time_serving(idx_BS) == 0 && CDR_BS(idx_BS) == 0
+		if n_HO_BS_TST(idx_BS) == 0 && CDR_BS(idx_BS) == 0
 			CDR_BS_TST(idx_BS) = 0;
 		else
-			CDR_BS_TST(idx_BS) = CDR_BS(idx_BS) / (BS_last_time_serving(idx_BS));
+			CDR_BS_TST(idx_BS) = CDR_BS(idx_BS) / (CDR_BS(idx_BS) + n_HO_BS_TST(idx_BS));
 		end
 	end
 
 	% 重置
-
-	n_DeadUE_BS(1,:)          = 0;
-	n_LiveUE_BS(1,:)          = 0;
-	CDR_BS(1,:)               = 0;
-	BS_last_time_serving(1,:) = 0;
+	n_DeadUE_BS(1,:) = 0;
+	n_LiveUE_BS(1,:) = 0;
 	
 	% ----------- %
 	% 更新Loading %

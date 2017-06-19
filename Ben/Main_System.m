@@ -378,11 +378,6 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 			a = 1;
 		end
 
-		% 這裡是在處理BS 的CDR
-		if idx_UEcnct_TST(UE_index) ~= 0 
-			BS_last_time_serving(idx_UEcnct_TST(UE_index)) = BS_last_time_serving(idx_UEcnct_TST(UE_index)) + 1;
-		end	
-
 
 		% ============================================================================================= %
 		%                    ________                             \                    ___              %
@@ -437,7 +432,7 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 		if idx_UEcnct_TST(idx_UE) == 0						 % 如果沒人服務我，只會發生在initial的時候
 			idx_UEprey_TST(idx_UE) = idx_trgt;				 % RSRP 最大的成為我的目標
 		else                             				     % 如果已經有人服務我了
-			idx_UEprey_TST(idx_UE) = 0; % 那目前的連線對象就是我的目標
+			idx_UEprey_TST(idx_UE) = idx_UEcnct_TST(idx_UE); % 那目前的連線對象就是我的目標
 		end
 
 		% ----------------- %
@@ -899,14 +894,14 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 		% Cell角度的CDR: 若UE本身有Serving Cell，但到最後UE離開Serving  Cell，這筆Call Drop就算在Serving Cell上                      %
 		% ========================================================================================================================== %
 
-		% if idx_UEprey_TST(idx_UE) ~= 0     % 該UE是有預期的連線目標，正常都會有
-		% 	if idx_UEcnct_TST(idx_UE) == 0 % UE有預期目標，但最後卻沒有Serving  Cell
-		% 		n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
+		if idx_UEprey_TST(idx_UE) ~= 0     % 該UE是有預期的連線目標，正常都會有
+			if idx_UEcnct_TST(idx_UE) == 0 % UE有預期目標，但最後卻沒有Serving  Cell
+				n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
 
-		% 	else % idx_UEcnct_TST(idx_UE) ~= 0
-		% 		n_LiveUE_BS(idx_UEprey_TST(idx_UE)) = n_LiveUE_BS(idx_UEprey_TST(idx_UE)) + 1;
-		% 	end
-		% end	
+			else % idx_UEcnct_TST(idx_UE) ~= 0
+				n_LiveUE_BS(idx_UEprey_TST(idx_UE)) = n_LiveUE_BS(idx_UEprey_TST(idx_UE)) + 1;
+			end
+		end	
 
 		% ============================================================================================ %
 		%                    ________          /                     |                      |          %
@@ -969,8 +964,8 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 	UE_survive = UE_survive + (n_UE - n_Block_UE - n_Drop_UE);
 	
 	% 重置
-	n_Block_UE  = 0;	
-	n_Drop_UE   = 0;
+	n_Block_UE = 0;
+	n_Drop_UE  = 0;
 
 	% ======================================== %
     % 算BS的Call Block Rate and Call Drop Rate %
@@ -987,15 +982,13 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 		if BS_last_time_serving(idx_BS) == 0 && CDR_BS(idx_BS) == 0
 			CDR_BS_TST(idx_BS) = 0;
 		else
-			CDR_BS_TST(idx_BS) = CDR_BS(idx_BS) / (BS_last_time_serving(idx_BS));
+			CDR_BS_TST(idx_BS) = CDR_BS(idx_BS) / (CDR_BS(idx_BS) + n_HO_BS_TST(idx_BS));
 		end
 	end
 
 	% 重置
 	n_DeadUE_BS(1,:)          = 0;
 	n_LiveUE_BS(1,:)          = 0;
-	CDR_BS(1,:)               = 0;
-	BS_last_time_serving(1,:) = 0;
 
 	% ----------- %
 	% 更新Loading %
