@@ -327,6 +327,8 @@ CBR_BS_TST 		           = zeros(1, n_BS);			   % KPI: Call Block Rate
 CDR_BS_TST 		           = zeros(1, n_BS);			   % KPI: Outage Probability 2016.11.15 -> Call Drop Rate 2017.01.04
 
 BS_RB_consumption          = zeros(1, n_BS);               % 每個Base Station在這段時間所使用的RB數
+
+BS_last_time_serving       = zeros(1, n_BS);               % 上個state服務的人
 	
 UE_survive                 = 0;                            % UE平均存活人數
 
@@ -362,19 +364,6 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 
 	AMP_Noise  = LTE_NoiseFloor_watt * randn(1);                            % 每個時間點的白高斯 雜訊都不一樣 [watt/RB]
 
-    BS_last_time_serving(1,:) = 0;
-	for UE_index = 1:1:n_UE
-		if UE_CoMP_orNOT(UE_index) == 0
-			if idx_UEcnct_TST(UE_index) ~= 0 
-				BS_last_time_serving(idx_UEcnct_TST(UE_index)) = BS_last_time_serving(idx_UEcnct_TST(UE_index)) + 1;
-			end
-		else
-			if idx_UEcnct_TST(UE_index) ~= 0 
-				BS_last_time_serving(idx_UEcnct_TST(UE_index)) = BS_last_time_serving(idx_UEcnct_TST(UE_index)) + 0.5;
-			end
-		end
-	end
-
 
 	% Loop 2: User	
 	% 寫收訊號的，A3 event，統計各個Performance，關係到RB 的要自己來 ( 細胞loading的問題, UE's SINR計算 )
@@ -388,6 +377,11 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 		if idx_UE == 268
 			a = 1;
 		end
+
+		% 這裡是在處理BS 的CDR
+		if idx_UEcnct_TST(UE_index) ~= 0 
+			BS_last_time_serving(idx_UEcnct_TST(UE_index)) = BS_last_time_serving(idx_UEcnct_TST(UE_index)) + 1;
+		end	
 
 
 		% ============================================================================================= %
@@ -443,7 +437,7 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 		if idx_UEcnct_TST(idx_UE) == 0						 % 如果沒人服務我，只會發生在initial的時候
 			idx_UEprey_TST(idx_UE) = idx_trgt;				 % RSRP 最大的成為我的目標
 		else                             				     % 如果已經有人服務我了
-			idx_UEprey_TST(idx_UE) = idx_UEcnct_TST(idx_UE); % 那目前的連線對象就是我的目標
+			idx_UEprey_TST(idx_UE) = 0; % 那目前的連線對象就是我的目標
 		end
 
 		% ----------------- %
@@ -511,12 +505,16 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 			% ----------------- %
 			if Dis_Connect_Reason == 0
 
+				n_LiveUE_BS(idx_UEprey_TST(idx_UE)) = n_LiveUE_BS(idx_UEprey_TST(idx_UE)) + 1;
+
 				% 還原
 				Dis_Connect_Reason = 0;
 
 			else
 				if Dis_Connect_Reason == 1
 					n_Block_UE = n_Block_UE + 1;
+
+					n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
 
 					% 該UE因為Cell的資源不夠被放棄
 					if idx_trgt <= n_MC
@@ -530,6 +528,8 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 
 				elseif Dis_Connect_Reason == 2
 					n_Block_UE = n_Block_UE + 1;
+
+					n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
 					
 					% 該UE因為看到的RB之頻譜效率都太低了,  所以被拒絕
 					if idx_trgt <= n_MC
@@ -899,16 +899,14 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 		% Cell角度的CDR: 若UE本身有Serving Cell，但到最後UE離開Serving  Cell，這筆Call Drop就算在Serving Cell上                      %
 		% ========================================================================================================================== %
 
-		if idx_UEprey_TST(idx_UE) ~= 0     % 該UE是有預期的連線目標，正常都會有
-			if idx_UEcnct_TST(idx_UE) == 0 % UE有預期目標，但最後卻沒有Serving  Cell
-				n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
+		% if idx_UEprey_TST(idx_UE) ~= 0     % 該UE是有預期的連線目標，正常都會有
+		% 	if idx_UEcnct_TST(idx_UE) == 0 % UE有預期目標，但最後卻沒有Serving  Cell
+		% 		n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
 
-			else % idx_UEcnct_TST(idx_UE) ~= 0
-				n_LiveUE_BS(idx_UEprey_TST(idx_UE)) = n_LiveUE_BS(idx_UEprey_TST(idx_UE)) + 1;
-			end
-		else
-			fprintf('BS_CBR calculation BUG\n');
-		end	
+		% 	else % idx_UEcnct_TST(idx_UE) ~= 0
+		% 		n_LiveUE_BS(idx_UEprey_TST(idx_UE)) = n_LiveUE_BS(idx_UEprey_TST(idx_UE)) + 1;
+		% 	end
+		% end	
 
 		% ============================================================================================ %
 		%                    ________          /                     |                      |          %
@@ -986,17 +984,18 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 		end
 
 		% BS Call Drop Rate
-		if isempty(find(idx_UEcnct_TST == idx_BS)) == 1 && CDR_BS(idx_BS) == 0
+		if BS_last_time_serving(idx_BS) == 0 && CDR_BS(idx_BS) == 0
 			CDR_BS_TST(idx_BS) = 0;
 		else
-			CDR_BS_TST(idx_BS) = CDR_BS(idx_BS) / (CDR_BS(idx_BS) + BS_last_time_serving(idx_BS));
+			CDR_BS_TST(idx_BS) = CDR_BS(idx_BS) / (BS_last_time_serving(idx_BS));
 		end
 	end
 
 	% 重置
-	n_DeadUE_BS(1,:) = 0;
-	n_LiveUE_BS(1,:) = 0;
-	CDR_BS(1,:)      = 0;
+	n_DeadUE_BS(1,:)          = 0;
+	n_LiveUE_BS(1,:)          = 0;
+	CDR_BS(1,:)               = 0;
+	BS_last_time_serving(1,:) = 0;
 
 	% ----------- %
 	% 更新Loading %
