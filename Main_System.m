@@ -387,7 +387,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		Dis_Connect_Reason  = 0;
 		Dis_Handover_Reason = 0;
 
-		if idx_t >= 50
+		if idx_t >= 10
 			a = 1;
 		end
 		if idx_UE == 64
@@ -517,7 +517,6 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 				% ----------------- %
 				if Dis_Connect_Reason == 0
 
-					n_LiveUE_BS(idx_UEprey_TST(idx_UE)) = n_LiveUE_BS(idx_UEprey_TST(idx_UE)) + 1;
 
 					% 還原
 					Dis_Connect_Reason = 0;
@@ -526,7 +525,6 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					if Dis_Connect_Reason == 1
 						n_Block_UE = n_Block_UE + 1;
 
-						n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
 
 						% 該UE因為Cell的資源不夠被放棄
 						if idx_trgt <= n_MC
@@ -540,8 +538,6 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 					elseif Dis_Connect_Reason == 2
 						n_Block_UE = n_Block_UE + 1;
-
-						n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
 						
 						% 該UE因為看到的RB之頻譜效率都太低了,  所以被拒絕
 						if idx_trgt <= n_MC
@@ -1310,20 +1306,6 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		% Cell角度的CBR: 若UE沒有連上預期的連線目標，反而到最後UE變得沒有Serving   Cell，這時這個Block Call就會算在預期的連線Cell上  %
 		% Cell角度的CDR: 若UE本身有Serving Cell，但到最後UE離開Serving  Cell，這筆Call Drop就算在Serving Cell上                      %
 		% ========================================================================================================================== %
-		% if UE_CoMP_orNOT(idx_UE) == 0
-		% 	if temp_CoMP_state == 0  % 原本沒做CoMP，後來也沒做CoMP的人		
-		% 		if idx_UEprey_TST(idx_UE) ~= 0  % 而且該UE是有UEprey的，表示該UE是處於沒人服務的狀態
-
-		% 			if Dis_Connect_Reason == 0
-		% 				n_LiveUE_BS(idx_UEprey_TST(idx_UE)) = n_LiveUE_BS(idx_UEprey_TST(idx_UE)) + 1;
-		% 			elseif Dis_Connect_Reason == 1 || Dis_Connect_Reason == 2
-		% 				n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
-		% 			end
-
-		% 		end
-		% 	end
-		% end
-
 		if temp_CoMP_state == 0
 			if UE_CoMP_orNOT(idx_UE) == 0
 
@@ -1333,7 +1315,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 						n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
 
 					else % idx_UEcnct_TST(idx_UE) ~= 0
-						n_LiveUE_BS(idx_UEprey_TST(idx_UE)) = n_LiveUE_BS(idx_UEprey_TST(idx_UE)) + 1;
+						n_LiveUE_BS(idx_UEcnct_TST(idx_UE)) = n_LiveUE_BS(idx_UEcnct_TST(idx_UE)) + 1;
 					end
 				else
 					fprintf('BS_CBR calculation BUG\n');
@@ -1447,8 +1429,8 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 	end
 
 	% 重置
-	n_DeadUE_BS(1,:) = 0;
-	n_LiveUE_BS(1,:) = 0;
+	% n_DeadUE_BS(1,:) = 0;
+	% n_LiveUE_BS(1,:) = 0;
 	
 	% ----------- %
 	% 更新Loading %

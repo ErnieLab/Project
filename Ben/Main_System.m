@@ -500,16 +500,12 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 			% ----------------- %
 			if Dis_Connect_Reason == 0
 
-				n_LiveUE_BS(idx_UEprey_TST(idx_UE)) = n_LiveUE_BS(idx_UEprey_TST(idx_UE)) + 1;
-
 				% 還原
 				Dis_Connect_Reason = 0;
 
 			else
 				if Dis_Connect_Reason == 1
 					n_Block_UE = n_Block_UE + 1;
-
-					n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
 
 					% 該UE因為Cell的資源不夠被放棄
 					if idx_trgt <= n_MC
@@ -523,8 +519,6 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 
 				elseif Dis_Connect_Reason == 2
 					n_Block_UE = n_Block_UE + 1;
-
-					n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
 					
 					% 該UE因為看到的RB之頻譜效率都太低了,  所以被拒絕
 					if idx_trgt <= n_MC
@@ -899,7 +893,7 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 				n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
 
 			else % idx_UEcnct_TST(idx_UE) ~= 0
-				n_LiveUE_BS(idx_UEprey_TST(idx_UE)) = n_LiveUE_BS(idx_UEprey_TST(idx_UE)) + 1;
+				n_LiveUE_BS(idx_UEcnct_TST(idx_UE)) = n_LiveUE_BS(idx_UEcnct_TST(idx_UE)) + 1;
 			end
 		end	
 
