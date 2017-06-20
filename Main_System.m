@@ -379,7 +379,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 	AMP_Noise  = LTE_NoiseFloor_watt * abs(randn(1));                            % 每個時間點的白高斯 雜訊都不一樣 [watt/RB]
 
-
+	% CIO_TST(1:1:n_MC) = -5;
 
 	% Loop 2: User	
 	% 寫收訊號的，A3 event，統計各個Performance，關係到RB 的要自己來 ( 細胞loading的問題, UE's SINR計算 )
@@ -524,7 +524,6 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 				else
 					if Dis_Connect_Reason == 1
 						n_Block_UE = n_Block_UE + 1;
-
 
 						% 該UE因為Cell的資源不夠被放棄
 						if idx_trgt <= n_MC
