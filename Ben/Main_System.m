@@ -364,7 +364,7 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 
 	AMP_Noise  = LTE_NoiseFloor_watt * randn(1);                            % 每個時間點的白高斯 雜訊都不一樣 [watt/RB]
 
-	CIO_TST(1:1:n_MC) = -5;
+	% CIO_TST(1:1:n_MC) = -5;
 
 
 	% Loop 2: User	
