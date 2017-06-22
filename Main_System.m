@@ -387,7 +387,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		Dis_Connect_Reason  = 0;
 		Dis_Handover_Reason = 0;
 
-		if idx_t >= 10
+		if idx_t >= 20
 			a = 1;
 		end
 		if idx_UE == 64
@@ -1444,7 +1444,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 	%          -------    -          -        -        % %   -           -------- \    -------    %
 	% ================================================ % % ====================================== %	
 	% Loop 4: 基地台開始做Fuzzy Q (需要細胞的CIO, Loading, CBR, CDR)
-	if (idx_t == t_start || rem(idx_t, FQ_BS_LI_TST) == 0)
+	if (idx_t == t_start || rem(idx_t, FQ_BS_LI_TST) <= 0.01)
 		for idx_BS = 1:n_BS			
 			% Fuzzifier
 			DoM_CIO_TSTc(idx_BS,:)      = FQc1_Fuzzifier(CIO_TST(idx_BS), 'C');  % CIO的degree of membership

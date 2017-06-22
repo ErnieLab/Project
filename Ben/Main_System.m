@@ -999,7 +999,7 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 	%          -------    -          -        -        % %   -           -------- \    -------    %
 	% ================================================ % % ====================================== %	
 	% Loop 4: 基地台開始做Fuzzy Q (需要細胞的CIO, Loading, CBR, CDR)
-	if (idx_t == t_start || rem(idx_t, FQ_BS_LI_TST) == 0)
+	if (idx_t == t_start || rem(idx_t, FQ_BS_LI_TST) <= 0.01)
 		for idx_BS = 1:n_BS			
 			% Fuzzifier
 			DoM_CIO_TSTc(idx_BS,:)      = FQc1_Fuzzifier(CIO_TST(idx_BS), 'C');  % CIO的degree of membership
