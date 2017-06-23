@@ -559,11 +559,12 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 				end
 			else %(idx_UEcnct_TST(idx_UE) ~= 0): 有人正在服務我 
 
-				% --------------- %
-				% 更新Throuhgput  %
-				% --------------- %
-				[UE_Throughput(idx_UE)] = Non_CoMP_Update_Throughput(n_MC, n_PC, BS_RB_table, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-														             idx_UE, idx_UEcnct_TST(idx_UE), BW_PRB);
+				% ------------------------------------------------- %
+				% 更新Throuhgput and 把對Throughput 沒貢獻的RB拔掉  %
+				% ------------------------------------------------- %
+				[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_Update_Throughput_and_Delete_Useless_RB(n_MC, n_PC, BS_RB_table, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+														                                                                            idx_UE, idx_UEcnct_TST(idx_UE), BW_PRB);
+				% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 
 				% -------------------- %
 				% 看A3 Event有沒有成立 %
@@ -630,6 +631,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 							% 記錄該UE在該時間點是否執行了Handover  %
 							% ------------------------------------- %
 							logical_HO(idx_UE) = 1;	% Handover success.
+							Dis_Connect_Reason = 0; % 只要是Hnadover成功，Dis_Connect_Reason一定= 0 
 
 							% --------- %
 							% TTT Reset %
@@ -712,62 +714,71 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 																										     idx_UE, idx_UEcnct_TST(idx_UE), GBR, BW_PRB);
 
 						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-					end
+					else
+						% Sorry，如果你的Target是Macro，那你只能靠自己了
+						if idx_trgt <= n_MC
+							[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = Non_CoMP_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+																																	idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);	
+							
+							% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 
-					% -------------------------------------------- %
-					% 先看看能不能執行Dynamic  Resource Scheduling % 
-					% -------------------------------------------- %
-					if UE_Throughput(idx_UE) < GBR
-						if idx_trgt > n_MC
-							% Dynamic Resource Scheduling
-							if (isempty(find(UE_RB_used(idx_UE, 1:Pico_part) == 1)) == 0) && (isempty(find(BS_RB_table(idx_trgt,:) == 0)) == 0)
+						% OK! Target是Pico，你可以叫他做點事
+						else
+							% --------------------------- %
+							% Dynamic Resource Scheduling %
+							% --------------------------- %
+							if (isempty(find(UE_RB_used(idx_UE, 1:Pico_part) == 1)) == 0) && (isempty(find(BS_RB_table(idx_trgt, 1:Pico_part) == 0)) == 0)
 								[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_DRS(BS_lct, n_MC, n_PC, P_MC_dBm, P_PC_dBm, BS_RB_table, BS_RB_who_used, UE_lct, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 																												idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
 																												GBR, BW_PRB, UE_CoMP_orNOT);
 
 								% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-							end							
+							end
 
-							% 做完Dynamic Resource Scheduling 發現QoS還是不夠，就看看能不能做CoMP，前提是Serving也要是Pico   Cell，如果不是那就沒辦法做CoMP了
+							% Pico做完Dynamic Resource Scheduling 發現QoS還是不夠，就看看能不能做CoMP
 							if UE_Throughput(idx_UE) < GBR
-								
+
 								% --------------------- %
 								% 再看看能不能執行CoMP  %  
 								% --------------------- %
-								if idx_UEcnct_TST(idx_UE) > n_MC
-
+								% Serving也要是Pico Cell，如果不是那就沒辦法做CoMP了，如果Serving  是Macro那UE也是要吃自己
+								if idx_UEcnct_TST(idx_UE) <= n_MC
+									[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = Non_CoMP_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+																																			idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);
+									
+									% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+								else
 									% ----------- %
 									% 更新Loading %
 									% ----------- %
-									[Load_TST] = Update_Loading(n_BS, n_MC, BS_RB_table, n_ttoffered, Pico_part);	
+									[Load_TST] = Update_Loading(n_BS, n_MC, BS_RB_table, n_ttoffered, Pico_part);
 
-									if Load_TST(idx_UEcnct_TST(idx_UE)) > Load_TST(idx_trgt)
-										if RsrpBS_dBm(idx_UEcnct_TST(idx_UE)) <= RsrpBS_dBm(idx_trgt) + CoMP_Threshold
-											% CoMP掛在這邊
-											[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE)] = Non_CoMP_to_CoMP(BS_lct, n_MC, n_PC, P_MC_dBm, P_PC_dBm, BS_RB_table, BS_RB_who_used, UE_lct, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-											 																																				    idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
-											 																																				    GBR, BW_PRB, idx_UEcnct_CoMP, UE_CoMP_orNOT);
+									if (Load_TST(idx_UEcnct_TST(idx_UE)) > Load_TST(idx_trgt)) && (RsrpBS_dBm(idx_UEcnct_TST(idx_UE)) <= RsrpBS_dBm(idx_trgt) + CoMP_Threshold)										
+										% CoMP掛在這邊
+										[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE)] = Non_CoMP_to_CoMP(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+										 																																				    idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
+										 																																				    GBR, BW_PRB, idx_UEcnct_CoMP);
+										
+										% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+										if UE_CoMP_orNOT(idx_UE) == 1
+											Success_Enter_CoMP_times = Success_Enter_CoMP_times + 1;
 											
+										else
+											[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = Non_CoMP_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+																																				    idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);
+										
 											% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-											if UE_CoMP_orNOT(idx_UE) == 1
-												Success_Enter_CoMP_times = Success_Enter_CoMP_times + 1;
-											end	
-										end
+										end																				
+									else
+										[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = Non_CoMP_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+																																				idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);
+										
+										% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 									end
 								end
 							end
-						end
-					end					
-
-					% ---------------------------------------------------------- %
-					% 如果在上面執行了CoMP，QoS一定會通過，沒通過的話再多拿RB    % 
-					% ---------------------------------------------------------- %
-					if UE_Throughput(idx_UE) < GBR	
-						[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = Non_CoMP_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-																																	idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);																											
-							
-						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-					end 
+						end						
+					end	
 
 					% ----------------------------------------------------------------- %
 					% 總於言之呢，Throughput有過QoS，就是OK啦，如果不ok就不會進來這了   %
@@ -966,11 +977,11 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 			temp_Cooperating = idx_UEcnct_CoMP(idx_UE, 2); % 算BS的Call Block Rate用的
 			temp_CoMP_state  = 1;                          % 算BS的Call Block Rate用的
 
-			% --------------- %
-			% 更新Throuhgput  %
-			% --------------- %
-			[UE_Throughput(idx_UE)] = CoMP_Update_Throughput(n_MC, n_PC, BS_RB_table, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-														     idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), BW_PRB);
+			% ------------------------------------------------- %
+			% 更新Throuhgput and 把對Throughput 沒貢獻的RB拔掉  %
+			% ------------------------------------------------- %
+			[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = CoMP_Update_Throughput_and_Delete_Useless_RB(n_MC, n_PC, BS_RB_table, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+														                                                                    idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), BW_PRB);
 
 			% --------------------- %
 			% 先看有沒有要離開CoMP  %
