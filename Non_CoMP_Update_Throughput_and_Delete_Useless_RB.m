@@ -1,7 +1,7 @@
 % ===================================================== %
 % 該function是用來讓**Non-CoMP**的UE，來更新Throughput  %
 % ===================================================== %
-function [BS_RB_table_output, BS_RB_who_used_output, UE_RB_used_output,UE_throughput_After_update] = Non_CoMP_Update_Throughput_and_Delete_Useless_RB(n_MC, n_PC, BS_RB_table, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+function [BS_RB_table_output, BS_RB_who_used_output, UE_RB_used_output,UE_throughput_After_update] = Non_CoMP_Update_Throughput_and_Delete_Useless_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 														                                                                                              idx_UE, Serving_Cell_index, BW_PRB)
 
 % ------- %
@@ -62,7 +62,6 @@ while isempty(find(RB_throughput == 0)) == 0
 	BS_RB_who_used(Serving_Cell_index, RB_we_can_count(RB_zero_index)) = 0;
 	UE_RB_used(idx_UE, RB_we_can_count(RB_zero_index))                 = 0;	
 
-	RB_SINR(RB_zero_index)         = [];	
 	RB_we_can_count(RB_zero_index) = [];
 	RB_throughput(RB_zero_index)   = [];
 end

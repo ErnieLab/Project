@@ -387,7 +387,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		Dis_Connect_Reason  = 0;
 		Dis_Handover_Reason = 0;
 
-		if idx_t >= 20
+		if idx_t >= 2.8
 			a = 1;
 		end
 		if idx_UE == 64
@@ -562,7 +562,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 				% ------------------------------------------------- %
 				% 更新Throuhgput and 把對Throughput 沒貢獻的RB拔掉  %
 				% ------------------------------------------------- %
-				[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_Update_Throughput_and_Delete_Useless_RB(n_MC, n_PC, BS_RB_table, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+				[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_Update_Throughput_and_Delete_Useless_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 														                                                                            idx_UE, idx_UEcnct_TST(idx_UE), BW_PRB);
 
 				% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
@@ -806,7 +806,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 						if timer_Drop_OngoingCall_NoRB(idx_UE) <= t_T310 && timer_Drop_OngoingCall_NoRB(idx_UE) > 0
 							timer_Drop_OngoingCall_NoRB(idx_UE) = timer_Drop_OngoingCall_NoRB(idx_UE) - t_d;
 							if timer_Drop_OngoingCall_NoRB(idx_UE) < 1e-5	% [SPECIAL CASE]
-								timer_Drop_OngoingCall_NoRB(idx_UE) = 0;		% [SPECIAL CASE]
+								timer_Drop_OngoingCall_NoRB(idx_UE) = 0;	% [SPECIAL CASE]
 							end 
 
 							% 還原
@@ -981,7 +981,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 			% ------------------------------------------------- %
 			% 更新Throuhgput and 把對Throughput 沒貢獻的RB拔掉  %
 			% ------------------------------------------------- %
-			[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = CoMP_Update_Throughput_and_Delete_Useless_RB(n_MC, n_PC, BS_RB_table, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+			[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = CoMP_Update_Throughput_and_Delete_Useless_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 														                                                                    idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), BW_PRB);
 
 			% --------------------- %
