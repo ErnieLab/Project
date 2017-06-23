@@ -48,24 +48,6 @@ for RB_index = 1:1:length(RB_we_can_throw)   % 這些可以丟的RB，最後要�
 end
 UE_throughput = sum(RB_throughput); % 更新UE的Throughput
 
-% -------------------------- %
-% 先把Throughput = 0的RB丟掉 %
-% -------------------------- %
-while isempty(find(RB_throughput == 0)) == 0
-	if isempty(RB_throughput) == 1
-		break;
-	end
-
-	[~, RB_zero_index] = min(RB_throughput);	
-	
-	BS_RB_table(Serving_Cell_index, RB_we_can_throw(RB_zero_index))    = 0;
-	BS_RB_who_used(Serving_Cell_index, RB_we_can_throw(RB_zero_index)) = 0;
-	UE_RB_used(idx_UE, RB_we_can_throw(RB_zero_index))                 = 0;	
-
-	RB_SINR(RB_zero_index)         = [];	
-	RB_we_can_throw(RB_zero_index) = [];
-	RB_throughput(RB_zero_index)   = [];
-end
 
 % ------------------- %
 % 再來看有誰可以踢掉  %
