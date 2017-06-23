@@ -564,6 +564,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 				% ------------------------------------------------- %
 				[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_Update_Throughput_and_Delete_Useless_RB(n_MC, n_PC, BS_RB_table, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 														                                                                            idx_UE, idx_UEcnct_TST(idx_UE), BW_PRB);
+
 				% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 
 				% -------------------- %
@@ -762,7 +763,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 										% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 										if UE_CoMP_orNOT(idx_UE) == 1
 											Success_Enter_CoMP_times = Success_Enter_CoMP_times + 1;
-											
+
 										else
 											[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = Non_CoMP_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 																																				    idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);
@@ -1057,26 +1058,22 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 				end
 
-				% ----------------------------------- %
-				% 如果Throughput > GBR，看能不能丟RB  %
-				% ----------------------------------- %
+				% --------------------------------------------------------------------------- %
+				% 如果Throughput >= GBR，看能不能丟RB ; 若Throughput < GBR，則多拿RB來做CoMP  %
+				% --------------------------------------------------------------------------- %
 				if UE_Throughput(idx_UE) >= GBR
 					[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = CoMP_throw_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 																									 idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), GBR, BW_PRB);
 
 					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-				end
-
-				% ------------------------------------------------------------ %
-				% 再來看UE的Throughput狀況怎樣，再來看說要不要多拿RB來做CoMP   %
-				% ------------------------------------------------------------ %
-				if UE_Throughput(idx_UE) < GBR
-					[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = CoMP_take_RB(BS_lct, n_MC, n_PC, P_MC_dBm, P_PC_dBm, BS_RB_table, BS_RB_who_used, UE_lct, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+				else
+					[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = CoMP_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 																														idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), UE_Throughput(idx_UE), ...
-																														GBR, BW_PRB, UE_CoMP_orNOT);
+																														GBR, BW_PRB);
 
 					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 				end
+
 
 				% -------------------------------------------------- %
 				% 上面的方法都沒用了，再來看說可不可以handover出去   %
@@ -1439,8 +1436,8 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 	end
 
 	% 重置
-	% n_DeadUE_BS(1,:) = 0;
-	% n_LiveUE_BS(1,:) = 0;
+	n_DeadUE_BS(1,:) = 0;
+	n_LiveUE_BS(1,:) = 0;
 	
 	% ----------- %
 	% 更新Loading %
@@ -1476,13 +1473,14 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 			[GlobalAct_TSTc(idx_BS),idx_subAct_choosed_new_TSTc(idx_BS,:)] = FQc3_GlobalAction(DoT_Rule_New_TSTc(idx_BS,:), ...
 																									Q_Table_TSTc(:,:,idx_BS));
 			%這邊GlobalAct是當作變化量，要在加上前一次的CIO，當作下一次真正使用的CIO    (目的是為了不讓CIO變化太大) 
-			if     (CIO_TST(idx_BS) + GlobalAct_TSTc(idx_BS) < -5)
-				CIO_TST(idx_BS) = -5;
-			elseif (CIO_TST(idx_BS) + GlobalAct_TSTc(idx_BS) > 5)
-				CIO_TST(idx_BS) = 5;
-			else
-				CIO_TST(idx_BS) = CIO_TST(idx_BS) + GlobalAct_TSTc(idx_BS);
-			end
+			% if     (CIO_TST(idx_BS) + GlobalAct_TSTc(idx_BS) < -5)
+			% 	CIO_TST(idx_BS) = -5;
+			% elseif (CIO_TST(idx_BS) + GlobalAct_TSTc(idx_BS) > 5)
+			% 	CIO_TST(idx_BS) = 5;
+			% else
+			% 	CIO_TST(idx_BS) = CIO_TST(idx_BS) + GlobalAct_TSTc(idx_BS);
+			% end
+			CIO_TST(idx_BS) = GlobalAct_TSTc(idx_BS);
 
 			% 計算Q-function 
 			Q_fx_new_TSTc(idx_BS) = FQc4_Qfunction(DoT_Rule_New_TSTc(idx_BS,:), Q_Table_TSTc(:,:,idx_BS), ...
