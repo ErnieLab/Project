@@ -106,7 +106,7 @@ if (isempty(RB_DRS) == 1) && (UE_throughput_CoMP < GBR)
 	RB_Serving_Cell_empty     = find(BS_RB_table(Serving_Cell_index, 1:Pico_part) == 0);     % Serving Cell空的RB
 	RB_Cooperating_Cell_empty = find(BS_RB_table(Cooperating_Cell_index, 1:Pico_part) == 0); % Cooperating Cell空的RB
 
-	% 先把UE可能要拿的位置找出來  : Serving Cell沒有使用到的RB位置
+	% 先把UE可能要拿的位置找出來  : Serving Cell跟Cooperating Cell沒有使用到的RB位置
 	RB_both_empty      = intersect(RB_Serving_Cell_empty, RB_Cooperating_Cell_empty);
 	RB_both_empty_SINR = zeros(1, length(RB_both_empty));
 
