@@ -63,7 +63,7 @@ if isempty(Target_might_move_these_RB) ~= 1
 		if isempty(Target_might_move_these_RB) == 1  % 有交集進來算，沒交集代表UE佔的位置，Target   Cell都沒有佔到，或者沒辦法換，也就是今天UE的Throughput不夠，是大環境的問題
 			break;
 		else
-			[~, might_move_RB_minSINR_index] = min(might_move_these_RB_SINR);  % 這個是Target Cell準備要移走的RB
+			[~, might_move_RB_minSINR_index] = max(might_move_these_RB_SINR);  % 這個是Target Cell準備要移走的RB
 
 			User_index_occupy_target_might_move_RB = BS_RB_who_used(Target_Cell_index, Target_might_move_these_RB(might_move_RB_minSINR_index)); % 佔住準備要移走的RB的UE
 
