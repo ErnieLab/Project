@@ -16,7 +16,7 @@ load('ttSimuT');
 % ============================================================================== %
 
 % -----------------------------------------------------
-% -------/* Simulation Parameters Setting /* (待確認)--
+% -------/* Simulation Parameters Setting /* ----------
 % -----------------------------------------------------
 MTS_1s = 1;		% [sec]														% Minimum Time-of-Stay from 3GPP Standard [sec]
 MTS_5s = 5;		% [sec]
@@ -60,11 +60,9 @@ BW_PRB      = 180 * 1e+3;													% LTE 每個Resource Block的頻寬為 180
 n_ttoffered = sys_BW/(BW_PRB/9*10);											% [[[ADJ]]]     % #max cnct per BS i.e., PRB
                                                                             % 系統 RB 的總數，*9/10那段是把RB的CP算進來除
 																			% B E N: Max #PRB under BW = 10 Mhz per slot(0.5ms)
-Pico_part   = n_ttoffered;          
+Pico_part   = n_ttoffered;                                                  % Pico Cell可以使用的部分
+
 GBR         = 256 * 1024;													% Guaranteed Bit Rate is 256 kbit/sec
-
-SINR_th     = -7;		                     								% 這裡應該要設為 -6.5dB (按照3gpp的規格)
-
 % -----------------------------------------------------
 % -----------------/* Channel */-----------------------
 % -----------------------------------------------------
@@ -72,7 +70,7 @@ Gamma_MC            = 3.76;                                                 % Pa
 Gamma_PC            = 3.67;                                                 % Pathloss Exponent (PC)  
 P_N_dBmHz           = -174; % [dBm/Hz]										% 高斯雜訊的 Power Density [dBm/Hz]
 LTE_NoiseFloor_dBm  = P_N_dBmHz + 10*log10(BW_PRB);							% Noise Floor approximate -121.45 [dBm/RB]
-LTE_NoiseFloor_watt = 10^((LTE_NoiseFloor_dBm - 30)/10);					% Noise Floor approximate 7.1614 * 1e+16 [watt/RB]
+LTE_NoiseFloor_watt = 10^((LTE_NoiseFloor_dBm - 30)/10);					% Noise Floor approximate 7.1614 * 1e-16 [watt/RB]
 
 
 
@@ -192,6 +190,8 @@ PPR_5s_TST     = zeros(1, n_UE);								            % 2016.12.15
 timer_Drop_OngoingCall_NoRB      = zeros(1, n_UE) + t_T310;
 timer_Drop_OngoingCall_RBNotGood = zeros(1, n_UE) + t_T310;
 
+timer_Drop_CoMPCall_NoRB         = zeros(1, n_UE) + t_T310;
+timer_Drop_CoMPCall_RBNotGood    = zeros(1, n_UE) + t_T310;
 
 % DropReason           = zeros(1,n_UE);	                                    % 2016.12.27	Drop Reason Range = [1,2,3,4] 
 % 													                                    %   1 : RB not enough
@@ -305,6 +305,8 @@ n_Block_NewCall_RBNotGood_Pico   = 0;
 
 n_Block_Waiting_BlockTimer       = 0;                      % 在等Block timer，被Block的
 
+
+
 UE_CBR                     = 0;                            % Call Block Rate: 全部UE跑完後，  N(被Block的人數) / n_UE
 
 n_Drop_UE                   = 0;                           % 被Drop 的人數
@@ -314,6 +316,11 @@ Drop_OngoingCall_NoRB_Pico  = 0;
 
 Drop_OngoingCall_RBNotGood_Macro = 0;                      % OngoingCall 因為發現Serving Cell 可以用的RB之頻譜效率都=0 ，並且持續1秒，所以放棄連線:  Drop
 Drop_OngoingCall_RBNotGood_Pico  = 0;
+
+Drop_CoMPCall_NoRB_Pico          = 0;                      % CoMPCall因為發現Serving Cell和Cooperating Cell沒有可以用的RB了，並且持續1秒， 所以被放棄支持連線:  Drop
+
+Drop_CoMPCall_RBNotGood_Pico     = 0;                      % CoMPCall因為發現Serving Cell和Cooperating Cell可以用的RB之頻譜效率都=0 ，並且持續1秒，所以放棄連線:  Drop
+
 
 UE_CDR                     = 0;                            % Call Drop Rate: 全部UE跑完後， N(被Drop的人數) / n_UE
 
@@ -332,10 +339,17 @@ BS_last_time_serving       = zeros(1, n_BS);               % 上個state服務�
 	
 UE_survive                 = 0;                            % UE平均存活人數
 
+Success_Enter_CoMP_times = 0;                              % 成功的進入CoMP的次數
+Success_Leave_CoMP_times = 0;                              % 成功的離開CoMP，沒有被切斷的次數
 
-Handover_Failure_times                    = 0;                            % Handover失敗的次數
-Handover_to_Macro_Failure_NoRB_times      = 0;                  % 想handover到Macro但是被拒絕的次數
-Handover_to_Pico_Failure_NoRB_times       = 0;                  % 想handover到Pico但是被拒絕的次數
+Failure_Leave_CoMP_Compel_times    = 0;
+Failure_Leave_CoMP_NoRB_times      = 0;                    % 離開CoMP後沒人有辦法接手
+Failure_Leave_CoMP_RBNotGood_times = 0;
+
+
+Handover_Failure_times                    = 0;             % Handover失敗的次數
+Handover_to_Macro_Failure_NoRB_times      = 0;             % 想handover到Macro但是被拒絕的次數
+Handover_to_Pico_Failure_NoRB_times       = 0;             % 想handover到Pico但是被拒絕的次數
 
 Handover_to_Macro_Failure_RBNotGood_times = 0;             % 想handover到Macro但是被拒絕的次數
 Handover_to_Pico_Failure_RBNotGood_times  = 0;             % 想handover到Pico但是被拒絕的次數
@@ -343,6 +357,7 @@ Handover_to_Pico_Failure_RBNotGood_times  = 0;             % 想handover到Pico�
 
 Macro_Serving_Num_change        = zeros((ttSimuT/t_d), 1);
 Pico_NonCoMP_Serving_Num_change = zeros((ttSimuT/t_d), 1);
+Pico_CoMP_Serving_Num_change    = zeros((ttSimuT/t_d), 1);
 % ============================================================= %
 %    ________                                                   %
 %   /                                                           %
@@ -357,15 +372,14 @@ Pico_NonCoMP_Serving_Num_change = zeros((ttSimuT/t_d), 1);
 tic
 
 % Loop 1: Time
-for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
+for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per loop
 	if (rem(idx_t,t_simu/ttSimuT) < 1e-3)                                       % 顯示時間用的，不知道在幹嘛， 不過不影響
 		fprintf(' %.3f sec\n', idx_t)
 	end
 
-	AMP_Noise  = LTE_NoiseFloor_watt * randn(1);                            % 每個時間點的白高斯 雜訊都不一樣 [watt/RB]
+	AMP_Noise  = LTE_NoiseFloor_watt * abs(randn(1));                            % 每個時間點的白高斯 雜訊都不一樣 [watt/RB]
 
 	% CIO_TST(1:1:n_MC) = -5;
-
 
 	% Loop 2: User	
 	% 寫收訊號的，A3 event，統計各個Performance，關係到RB 的要自己來 ( 細胞loading的問題, UE's SINR計算 )
@@ -373,13 +387,12 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 		Dis_Connect_Reason  = 0;
 		Dis_Handover_Reason = 0;
 
-		if idx_t >= 5.9
+		if idx_t >= 2.8
 			a = 1;
 		end
-		if idx_UE == 268
+		if idx_UE == 64
 			a = 1;
 		end
-
 
 		% ============================================================================================= %
 		%                    ________                             \                    ___              %
@@ -416,65 +429,466 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 		%                                                                                                 %
 		% =============================================================================================== %
 		% UE在Non-CoMP下走的FlowChart
+		if UE_CoMP_orNOT(idx_UE) == 0  % UE沒有做CoMP
+			temp_CoMP_state = 0;
 
-		% ------------------------------------------------------------------------------- %
-		% 找出目前哪個基地台RSRP對該UE最大 ，而且是多少dB (對比到學長主程式的311-313行 )  %
-		% ------------------------------------------------------------------------------- %
-		temp_rsrp = RsrpBS_dBm + CIO_TST;
-		% target對象不要選到自己
-		if idx_UEcnct_TST(idx_UE) ~= 0
-			temp_rsrp(idx_UEcnct_TST(idx_UE)) = min(temp_rsrp); 
-		end
-		% 選RSRP+CIO最大的出來				
-		[~, idx_trgt] = max(temp_rsrp);
+			% ------------------------------------------------------------------------------- %
+			% 找出目前哪個基地台RSRP對該UE最大 ，而且是多少dB (對比到學長主程式的311-313行 )  %
+			% ------------------------------------------------------------------------------- %
+			temp_rsrp = RsrpBS_dBm + CIO_TST;
+			% target對象不要選到自己
+			if idx_UEcnct_TST(idx_UE) ~= 0
+				temp_rsrp(idx_UEcnct_TST(idx_UE)) = min(temp_rsrp); 
+			end
+			% 選RSRP+CIO最大的出來				
+			[~, idx_trgt] = max(temp_rsrp);
 
-		% ------------------------------ %
-		% 把目前應該要服務我的人抓出來   %
-		% ------------------------------ %
-		if idx_UEcnct_TST(idx_UE) == 0						 % 如果沒人服務我，只會發生在initial的時候
-			idx_UEprey_TST(idx_UE) = idx_trgt;				 % RSRP 最大的成為我的目標
-		else                             				     % 如果已經有人服務我了
-			idx_UEprey_TST(idx_UE) = idx_UEcnct_TST(idx_UE); % 那目前的連線對象就是我的目標
-		end
+			% ------------------------------ %
+			% 把目前應該要服務我的人抓出來   %
+			% ------------------------------ %
+			% 這邊專門處理Call  Block Rate的問題
+			if idx_UEcnct_TST(idx_UE) == 0						 
+				idx_UEprey_TST(idx_UE) = idx_trgt;			 
+			else                             				     
+				idx_UEprey_TST(idx_UE) = idx_UEcnct_TST(idx_UE);                      
+			end
 
-		% ----------------- %
-		% 看有沒有人服務你  %
-		% ----------------- %
-		if (idx_UEcnct_TST(idx_UE) == 0) % 沒人服務，這可能是initial  or 被踢掉
+			% ----------------- %
+			% 看有沒有人服務你  %
+			% ----------------- %
+			if (idx_UEcnct_TST(idx_UE) == 0) % 沒人服務，這可能是initial  or 被踢掉
 
-			% --------------------------------------------------------------------- %
-			% 當user被踢掉後，必須等一段時間才能重新拿RB，這裡就UE是在等這段時間    %
-			% 當user等完了之後，就要開始拿RB                                        %
-			% --------------------------------------------------------------------- %
-			if (timer_Arrive(idx_UE) ~= 0) % Waiting Users
-				timer_Arrive(idx_UE) = timer_Arrive(idx_UE) - t_d;	% Countdown
-				if (timer_Arrive(idx_UE) < t_d)
-					timer_Arrive(idx_UE) = 0;
+				% --------------------------------------------------------------------- %
+				% 當user被踢掉後，必須等一段時間才能重新拿RB，這裡就UE是在等這段時間    %
+				% 當user等完了之後，就要開始拿RB                                        %
+				% --------------------------------------------------------------------- %
+				if (timer_Arrive(idx_UE) ~= 0) % Waiting Users
+					timer_Arrive(idx_UE) = timer_Arrive(idx_UE) - t_d;	% Countdown
+					if (timer_Arrive(idx_UE) < t_d)
+						timer_Arrive(idx_UE) = 0;
+					end
+					Dis_Connect_Reason = 3; % 還在等連線，也算在Call  Block Rate頭上
+ 
+				else  %(timer_Arrive(idx_UE) == 0): Arriving Users	
+					% ---------------- %
+					% 拿Resource Block %
+					% ---------------- %
+					[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), Dis_Connect_Reason] = NewCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+									                                                                                                               idx_UE, idx_trgt, GBR, BW_PRB);
+									                                                                                                               
+					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+
+					% -------------------------------------------------------------------- %
+					% 不論UE是死是活，都會再給他一個等待時間，下次她被放棄時就會數這個     %
+					% -------------------------------------------------------------------- %
+					while timer_Arrive(idx_UE) == 0	
+						timer_Arrive(idx_UE) = poissrnd(1);	% 2017.01.05 Not to be ZERO please.  % 不要是 0
+					end					
+
+					% ---------------------------------------------------- %
+					% 計算Ping-Pong Effect是否有發生，跟Performance 的計算 %
+					% 有兩個KPI: (1) 1秒內發生碰撞   (2) 5秒內發生碰撞     %
+					% ---------------------------------------------------- %
+					if idx_UEcnct_TST(idx_UE) ~= state_PPE_TST(idx_UE,1)	% 2017.01.04
+
+						state_PPE_TST(idx_UE,:) = PingPong_Update(state_PPE_TST(idx_UE,:), idx_UEcnct_TST(idx_UE), idx_t);
+						% ===/* Ping Pong State Update [1 sec] */===
+						if    (state_PPE_TST(idx_UE,1) == state_PPE_TST(idx_UE,3) ...
+							&& state_PPE_TST(idx_UE,1) ~= state_PPE_TST(idx_UE,2) ...
+							&& state_PPE_TST(idx_UE,4) -  state_PPE_TST(idx_UE,5) <= MTS_1s ...
+							&& prod(state_PPE_TST(idx_UE,:)) ~= 0)	% 2017.01.04 Live 2 Dead 2 Live is not Ping-Pong, Dead 2 Live 2 Dead either.
+							% Ping-Pong Effect Occur
+							n_PPE_1s_TST(idx_UE) = n_PPE_1s_TST(idx_UE) + 1; % [PRFM]
+						end
+						% ===/* Ping Pong State Update [5 sec] */===
+						if    (state_PPE_TST(idx_UE,1) == state_PPE_TST(idx_UE,3) ...
+							&& state_PPE_TST(idx_UE,1) ~= state_PPE_TST(idx_UE,2) ...
+							&& state_PPE_TST(idx_UE,4) -  state_PPE_TST(idx_UE,5) <= MTS_5s ...
+							&& prod(state_PPE_TST(idx_UE,:)) ~= 0)	% 2017.01.04 Live 2 Dead 2 Live is not Ping-Pong, Dead 2 Live 2 Dead either.
+							% Ping-Pong Effect Occur
+							n_PPE_5s_TST(idx_UE) = n_PPE_5s_TST(idx_UE) + 1; % [PRFM]
+							PPR_5s_TST(idx_UE)   = n_PPE_5s_TST(idx_UE) / n_HO_UE_TST(idx_UE);	% 2016.12.15
+						end
+					end 					
 				end
-				Dis_Connect_Reason = 1; % 還在等連線，也算在Call  Block Rate頭上
 
-			else  %(timer_Arrive(idx_UE) == 0): Arriving Users	
-				% ---------------- %
-				% 拿Resource Block %
-				% ---------------- %				
-				[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), Dis_Connect_Reason] = NewCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-								                                                                                                               idx_UE, idx_trgt, GBR, BW_PRB);
-								                                                                                                               
+				% ----------------- %
+				% 計算UE Call Block %
+				% ----------------- %
+				if Dis_Connect_Reason == 0
+
+
+					% 還原
+					Dis_Connect_Reason = 0;
+
+				else
+					if Dis_Connect_Reason == 1
+						n_Block_UE = n_Block_UE + 1;
+
+						% 該UE因為Cell的資源不夠被放棄
+						if idx_trgt <= n_MC
+							n_Block_NewCall_NoRB_Macro = n_Block_NewCall_NoRB_Macro + 1;							
+						else
+							n_Block_NewCall_NoRB_Pico = n_Block_NewCall_NoRB_Pico + 1;
+						end
+
+						% 還原
+						Dis_Connect_Reason = 0;
+
+					elseif Dis_Connect_Reason == 2
+						n_Block_UE = n_Block_UE + 1;
+						
+						% 該UE因為看到的RB之頻譜效率都太低了,  所以被拒絕
+						if idx_trgt <= n_MC
+							n_Block_NewCall_RBNotGood_Macro = n_Block_NewCall_RBNotGood_Macro + 1;							
+						else
+							n_Block_NewCall_RBNotGood_Pico = n_Block_NewCall_RBNotGood_Pico + 1;
+						end
+
+						% 還原
+						Dis_Connect_Reason = 0;
+					elseif Dis_Connect_Reason == 3
+						n_Block_UE = n_Block_UE + 1;
+
+						% 因為UE還在等 ，所以也算被Block
+						n_Block_Waiting_BlockTimer = n_Block_Waiting_BlockTimer + 1;
+
+						% 還原
+						Dis_Connect_Reason = 0;
+					end
+				end
+			else %(idx_UEcnct_TST(idx_UE) ~= 0): 有人正在服務我 
+
+				% ------------------------------------------------- %
+				% 更新Throuhgput and 把對Throughput 沒貢獻的RB拔掉  %
+				% ------------------------------------------------- %
+				[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_Update_Throughput_and_Delete_Useless_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+														                                                                            idx_UE, idx_UEcnct_TST(idx_UE), BW_PRB);
+
 				% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 
-				% -------------------------------------------------------------------- %
-				% 不論UE是死是活，都會再給他一個等待時間，下次她被放棄時就會數這個     %
-				% -------------------------------------------------------------------- %
-				while timer_Arrive(idx_UE) == 0	
-					timer_Arrive(idx_UE) = poissrnd(1);	% 2017.01.05 Not to be ZERO please.  % 不要是 0
-				end					
+				% -------------------- %
+				% 看A3 Event有沒有成立 %
+				% -------------------- %						
+				if (RsrpBS_dBm(idx_trgt) + CIO_TST(idx_trgt) > RsrpBS_dBm(idx_UEcnct_TST(idx_UE)) + CIO_TST(idx_UEcnct_TST(idx_UE)) + HHM)
 
-				% ---------------------------------------------------- %
-				% 計算Ping-Pong Effect是否有發生，跟Performance 的計算 %
-				% 有兩個KPI: (1) 1秒內發生碰撞   (2) 5秒內發生碰撞     %
-				% ---------------------------------------------------- %
-				if idx_UEcnct_TST(idx_UE) ~= state_PPE_TST(idx_UE,1)	% 2017.01.04
+					% A3 Event一旦trigger，TTT就開始數
+					if (timer_TTT_TST(idx_UE) <= t_TTT && timer_TTT_TST(idx_UE) > 0)
 
+						% 單純減TTT
+						timer_TTT_TST(idx_UE) = timer_TTT_TST(idx_UE) - t_d;
+						if (timer_TTT_TST(idx_UE) < 1e-5)	% [SPECIAL CASE] 0930
+							timer_TTT_TST(idx_UE) = 0;		% [SPECIAL CASE]
+						end 
+
+					elseif (timer_TTT_TST(idx_UE) == 0)	
+						% ==================================================================== %	% ================================== %
+						%     -----    ------    -----             -------   -----   -------   %	%   ------  ------   ------  -   --	 %
+						%    /         |     )  (                     |     (           |      %	%   |     ) |     \  |     )  \ /	 %
+						%   |     ---  |-----    -----     o -_       |      -----      |      %	%   ------  |      | ------    V 	 %
+						%    \     |   |              )    | | |      |           )     |      %	%   |     ) |     /  |     \   |	 %
+						%     -----    -         -----     - - -      -      -----      -      %	%   ------  ------   -     -   -	 %
+						% ==================================================================== %	% ================================== %
+						% distance_UE_target = norm(UE_lct(idx_UE,:) - BS_lct(idx_trgt,:));							
+						% % tToS
+						% if idx_trgt <= n_MC
+						% 	GPSinTST_trgtToS(idx_UE) = GPS_fx(BS_lct(idx_trgt,:), MACROCELL_RADIUS, UE_lct(idx_UE,:), UE_v(idx_UE,:)) - t_TTT; % 2017.01.21
+						% else  % idx_trgt > n_MC
+						% 	GPSinTST_trgtToS(idx_UE) = GPS_fx(BS_lct(idx_trgt,:), distance_UE_target, UE_lct(idx_UE,:), UE_v(idx_UE,:)) - t_TTT; % 2017.01.21
+						% end
+
+						% Willie的演算法
+						% if GPSinTST_trgtToS(idx_UE) > TST_HD
+							% 通過A3 Event ---> 數完TTT ---> Time of Stay Threshold大於TST_HD ---> 接下來檢查夠不夠資源
+
+						% Handover Call來拿RB
+						temp_idx_UEcnct_TST = idx_UEcnct_TST(idx_UE); % 暫存的，來紀錄從哪裡handover到哪裡
+						[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), Dis_Handover_Reason] = Non_CoMP_HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+										                                                                                                                              idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), GBR, BW_PRB);
+						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+
+						if idx_UEcnct_TST(idx_UE) == idx_trgt
+							% !!!!!!!!!!成功Handvoer到Target Cell!!!!!!!!!!
+							% ---------------- %
+							% Handover次數計算 %
+							% ---------------- %
+							n_HO_UE_TST(idx_UE)   = n_HO_UE_TST(idx_UE)   + 1;
+							n_HO_BS_TST(idx_trgt) = n_HO_BS_TST(idx_trgt) + 1;	% Only for target cell
+
+							% ----------------------------------- %
+							% 看Handover是從什麼Cell換到什麼Cell  %
+							% ----------------------------------- %
+							if     temp_idx_UEcnct_TST <= n_MC && idx_UEcnct_TST(idx_UE) <= n_MC
+								n_HO_M2M = n_HO_M2M + 1;
+							elseif temp_idx_UEcnct_TST <= n_MC && idx_UEcnct_TST(idx_UE) >  n_MC
+								n_HO_M2P = n_HO_M2P + 1;
+							elseif temp_idx_UEcnct_TST >  n_MC && idx_UEcnct_TST(idx_UE) <= n_MC
+								n_HO_P2M = n_HO_P2M + 1;
+							elseif temp_idx_UEcnct_TST >  n_MC && idx_UEcnct_TST(idx_UE) >  n_MC
+								n_HO_P2P = n_HO_P2P + 1;
+							end	
+
+							% ------------------------------------- %
+							% 記錄該UE在該時間點是否執行了Handover  %
+							% ------------------------------------- %
+							logical_HO(idx_UE) = 1;	% Handover success.
+							Dis_Connect_Reason = 0; % 只要是Hnadover成功，Dis_Connect_Reason一定= 0 
+
+							% --------- %
+							% TTT Reset %
+							% --------- %
+							timer_TTT_TST(idx_UE) = t_TTT;	% 2016.12.28
+
+							% --------------------- %
+							% Ping-Pong Rate UPDATE %
+							% --------------------- %
+							PPR_5s_TST(idx_UE)    = n_PPE_5s_TST(idx_UE) / n_HO_UE_TST(idx_UE);	% 2017.01.01
+						else
+							Handover_Failure_times = Handover_Failure_times + 1;
+
+							% Handover失敗了，看是Handover誰而失敗，阿為什麼失敗，計錄下來
+							if Dis_Handover_Reason == 1
+								if idx_trgt <= n_MC
+									Handover_to_Macro_Failure_NoRB_times = Handover_to_Macro_Failure_NoRB_times + 1;
+								else
+									Handover_to_Pico_Failure_NoRB_times  = Handover_to_Pico_Failure_NoRB_times + 1;
+								end
+
+							elseif Dis_Handover_Reason == 2
+								if idx_trgt <= n_MC
+									Handover_to_Macro_Failure_RBNotGood_times = Handover_to_Macro_Failure_RBNotGood_times + 1;										
+								else
+									Handover_to_Pico_Failure_RBNotGood_times  = Handover_to_Pico_Failure_RBNotGood_times + 1;
+								end
+							end
+							Dis_Handover_Reason = 0;
+
+							% ------------------------------------- %
+							% 記錄該UE在該時間點是否執行了Handover  %
+							% ------------------------------------- %
+							logical_HO(idx_UE) = 0;	% Handover fail
+						end
+						% end
+					end		
+				else
+					% 沒有Handover !!!
+					logical_HO(idx_UE) = 0;
+
+					% TTT Reset
+					timer_TTT_TST(idx_UE) = t_TTT;
+				end
+				% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+
+                % ----------------------------------------------------------- %
+				% 如果(1)沒有過A3 Event               __\  就會走以下的流程   %
+				%     (2)過了但是Target Cell沒有資源    /	                  %
+				% ----------------------------------------------------------- %			
+				if logical_HO(idx_UE) == 0
+
+					% ------------------------------------------------------ %
+					% 如果Throughput < GBR，先來換換看，這裡注意一定要先換   %
+					% ------------------------------------------------------ %
+					if UE_Throughput(idx_UE) < GBR
+						if idx_UEcnct_TST(idx_UE) <= n_MC
+							%  看能不能換個RB 位置 					
+							if (isempty(find(UE_RB_used(idx_UE,:) == 1)) == 0) && (isempty(find(BS_RB_table(idx_UEcnct_TST(idx_UE),:) == 0)) == 0)
+								[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_Serving_change_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+									                                                                                          idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);						                                                                                          
+							end
+						else
+							%  看能不能換個RB 位置 					
+							if (isempty(find(UE_RB_used(idx_UE, 1:Pico_part) == 1)) == 0) && (isempty(find(BS_RB_table(idx_UEcnct_TST(idx_UE),1:Pico_part) == 0)) == 0)
+								[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_Serving_change_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+									                                                                                          idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);		                                                                                          
+							end
+						end
+
+						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+					end
+
+					% ------------------------------------ %
+					% 如果Throughput >= GBR，看能不能丟RB  %
+					% ------------------------------------ %
+					if UE_Throughput(idx_UE) >= GBR
+						% 把頻譜效率 = 0的RB丟掉，如果還可以再丟，那就繼續丟
+						[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_throw_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+																										     idx_UE, idx_UEcnct_TST(idx_UE), GBR, BW_PRB);
+
+						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+					else
+						% Sorry，如果你的Target是Macro，那你只能靠自己了
+						if idx_trgt <= n_MC
+							[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = Non_CoMP_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+																																	idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);	
+							
+							% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+
+						% OK! Target是Pico，你可以叫他做點事
+						else
+							% --------------------------- %
+							% Dynamic Resource Scheduling %
+							% --------------------------- %
+							% if (isempty(find(UE_RB_used(idx_UE, 1:Pico_part) == 1)) == 0) && (isempty(find(BS_RB_table(idx_trgt, 1:Pico_part) == 0)) == 0)
+							% 	[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_DRS(BS_lct, n_MC, n_PC, P_MC_dBm, P_PC_dBm, BS_RB_table, BS_RB_who_used, UE_lct, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+							% 																					idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), ...
+							% 																					GBR, BW_PRB, UE_CoMP_orNOT);
+
+							% 	% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+							% end
+
+							% Pico做完Dynamic Resource Scheduling 發現QoS還是不夠，就看看能不能做CoMP
+							if UE_Throughput(idx_UE) < GBR
+								[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = Non_CoMP_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+																																		idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);
+									
+								% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+							end
+						end						
+					end	
+
+					% ----------------------------------------------------------------- %
+					% 總於言之呢，Throughput有過QoS，就是OK啦，如果不ok就不會進來這了   %
+					% ----------------------------------------------------------------- %
+					if UE_Throughput(idx_UE) >= GBR
+						Dis_Connect_Reason = 0;
+					end
+				end 
+
+
+				% ---------------------------------- %
+				% 計算UE Call Drop and BS Call Drop  %
+				% ---------------------------------- %
+				if Dis_Connect_Reason == 0          % 會進來這代表 (1)UE handover成功 (2)沒有handover or handover失敗，但是UE成功連回Serving  Cell
+
+					% Dropping timer 重置為 1sec					
+					timer_Drop_OngoingCall_NoRB(idx_UE)      = t_T310;
+					timer_Drop_OngoingCall_RBNotGood(idx_UE) = t_T310;
+
+					% 還原
+					Dis_Connect_Reason = 0;
+				else
+					if Dis_Connect_Reason == 1      % 會進來這裡就是  (1)找Serving Cell要資源，Serving Cell說資源沒了
+						if timer_Drop_OngoingCall_NoRB(idx_UE) <= t_T310 && timer_Drop_OngoingCall_NoRB(idx_UE) > 0
+							timer_Drop_OngoingCall_NoRB(idx_UE) = timer_Drop_OngoingCall_NoRB(idx_UE) - t_d;
+							if timer_Drop_OngoingCall_NoRB(idx_UE) < 1e-5	% [SPECIAL CASE]
+								timer_Drop_OngoingCall_NoRB(idx_UE) = 0;	% [SPECIAL CASE]
+							end 
+
+							% 還原
+							Dis_Connect_Reason = 0;
+
+						elseif timer_Drop_OngoingCall_NoRB(idx_UE) == 0
+
+							% Drop記上一筆
+							n_Drop_UE = n_Drop_UE + 1;
+
+							% 該UE因為Cell的資源不夠被放棄						
+							CDR_BS(idx_UEcnct_TST(idx_UE)) = CDR_BS(idx_UEcnct_TST(idx_UE)) + 1;
+
+							% 看UE是被Macro還是Pico說資源不夠，而把你斷掉的
+							if idx_UEcnct_TST(idx_UE) <= n_MC
+								Drop_OngoingCall_NoRB_Macro = Drop_OngoingCall_NoRB_Macro + 1;								
+							else
+								Drop_OngoingCall_NoRB_Pico  = Drop_OngoingCall_NoRB_Pico + 1;
+							end
+
+							% 把RB還給Serving Cell
+							if idx_UEcnct_TST(idx_UE) <= n_MC
+								for RB_index = 1:1:n_ttoffered
+									if BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index) == 1 && UE_RB_used(idx_UE, RB_index) == 1
+										BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index)    = 0;
+										BS_RB_who_used(idx_UEcnct_TST(idx_UE), RB_index) = 0;
+										UE_RB_used(idx_UE, RB_index)                     = 0;
+									end
+								end
+							else
+								for RB_index = 1:1:Pico_part
+									if BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index) == 1 && UE_RB_used(idx_UE, RB_index) == 1
+										BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index)    = 0;
+										BS_RB_who_used(idx_UEcnct_TST(idx_UE), RB_index) = 0;
+										UE_RB_used(idx_UE, RB_index)                     = 0;
+									end
+								end
+							end		
+							idx_UEcnct_TST(idx_UE) = 0; % 結束連線
+							UE_Throughput(idx_UE)  = 0; % UE的throughput歸零
+
+							% Dropping timer 重置為 1sec
+							timer_Drop_OngoingCall_NoRB(idx_UE)      = t_T310;
+							timer_Drop_OngoingCall_RBNotGood(idx_UE) = t_T310;
+
+							% 還原
+							Dis_Connect_Reason = 0;
+						end
+
+					elseif Dis_Connect_Reason == 2  % 會進來這裡就是  (1)找Serving Cell要資源，發現Serving Cell的RB質量不夠
+
+						if timer_Drop_OngoingCall_RBNotGood(idx_UE) <= t_T310 && timer_Drop_OngoingCall_RBNotGood(idx_UE) > 0
+							% 倒數Drop timer 
+							timer_Drop_OngoingCall_RBNotGood(idx_UE) = timer_Drop_OngoingCall_RBNotGood(idx_UE) - t_d;
+							if timer_Drop_OngoingCall_RBNotGood(idx_UE) < 1e-5	% [SPECIAL CASE]
+								timer_Drop_OngoingCall_RBNotGood(idx_UE) = 0;		% [SPECIAL CASE]
+							end 
+
+							% 還原
+							Dis_Connect_Reason = 0;
+
+						elseif timer_Drop_OngoingCall_RBNotGood(idx_UE) == 0
+
+							% Drop記上一筆
+							n_Drop_UE = n_Drop_UE + 1;
+
+							% 該Ongoing Call因為看到的RB之頻譜效率都太低了,  並且持續1秒, 所以被拒絕
+							CDR_BS(idx_UEcnct_TST(idx_UE))  = CDR_BS(idx_UEcnct_TST(idx_UE)) + 1;
+
+							% 這裡是因為UE自己走太遠，但在之間如果有想Handover但被拒絕，導致他走太遠沒人服務，這也要算一筆							
+							if idx_UEcnct_TST(idx_UE) <= n_MC
+								Drop_OngoingCall_RBNotGood_Macro = Drop_OngoingCall_RBNotGood_Macro + 1;
+							else
+								Drop_OngoingCall_RBNotGood_Pico  = Drop_OngoingCall_RBNotGood_Pico + 1;
+							end		
+
+							% 把RB還給Serving Cell
+							if idx_UEcnct_TST(idx_UE) <= n_MC
+								for RB_index = 1:1:n_ttoffered
+									if BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index) == 1 && UE_RB_used(idx_UE, RB_index) == 1
+										BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index)    = 0;
+										BS_RB_who_used(idx_UEcnct_TST(idx_UE), RB_index) = 0;
+										UE_RB_used(idx_UE, RB_index)                     = 0;
+									end
+								end
+							else
+								for RB_index = 1:1:Pico_part
+									if BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index) == 1 && UE_RB_used(idx_UE, RB_index) == 1
+										BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index)    = 0;
+										BS_RB_who_used(idx_UEcnct_TST(idx_UE), RB_index) = 0;
+										UE_RB_used(idx_UE, RB_index)                     = 0;
+									end
+								end
+							end	
+							idx_UEcnct_TST(idx_UE) = 0; % 結束連線
+							UE_Throughput(idx_UE)  = 0; % UE的throughput歸零
+
+							% Dropping timer 重置為 1sec
+							timer_Drop_OngoingCall_NoRB(idx_UE)      = t_T310;
+							timer_Drop_OngoingCall_RBNotGood(idx_UE) = t_T310;
+
+							% 還原
+							Dis_Connect_Reason = 0;
+						end						
+					end
+				end
+				% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+
+				% --------------------------------- %
+				% 主要統計: 檢查Ping-Pong有沒有發生 %
+				% --------------------------------- %
+				if logical_HO(idx_UE) == 1
+
+					% ---------------------------------------------------- %
+					% 計算Ping-Pong Effect是否有發生，跟Performance 的計算 %
+					% 有兩個KPI: (1) 1秒內發生碰撞   (2) 5秒內發生碰撞     %
+					% ---------------------------------------------------- %
 					state_PPE_TST(idx_UE,:) = PingPong_Update(state_PPE_TST(idx_UE,:), idx_UEcnct_TST(idx_UE), idx_t);
 					% ===/* Ping Pong State Update [1 sec] */===
 					if    (state_PPE_TST(idx_UE,1) == state_PPE_TST(idx_UE,3) ...
@@ -493,411 +907,55 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 						n_PPE_5s_TST(idx_UE) = n_PPE_5s_TST(idx_UE) + 1; % [PRFM]
 						PPR_5s_TST(idx_UE)   = n_PPE_5s_TST(idx_UE) / n_HO_UE_TST(idx_UE);	% 2016.12.15
 					end
-				end 					
-			end
-
-
-			% ----------------- %
-			% 計算UE Call Block %
-			% ----------------- %
-			if Dis_Connect_Reason == 0
-
-				% 還原
-				Dis_Connect_Reason = 0;
-
-			else
-				if Dis_Connect_Reason == 1
-					n_Block_UE = n_Block_UE + 1;
-
-					% 該UE因為Cell的資源不夠被放棄
-					if idx_trgt <= n_MC
-						n_Block_NewCall_NoRB_Macro = n_Block_NewCall_NoRB_Macro + 1;							
-					else
-						n_Block_NewCall_NoRB_Pico = n_Block_NewCall_NoRB_Pico + 1;
-					end
 
 					% 還原
-					Dis_Connect_Reason = 0;
-
-				elseif Dis_Connect_Reason == 2
-					n_Block_UE = n_Block_UE + 1;
-					
-					% 該UE因為看到的RB之頻譜效率都太低了,  所以被拒絕
-					if idx_trgt <= n_MC
-						n_Block_NewCall_RBNotGood_Macro = n_Block_NewCall_RBNotGood_Macro + 1;							
-					else
-						n_Block_NewCall_RBNotGood_Pico = n_Block_NewCall_RBNotGood_Pico + 1;
+					logical_HO(idx_UE) = 0;
+				else
+					if UE_CoMP_orNOT(idx_UE) == 1 % 如果開始執行CoMP，這時Ping-pong  effect 不存在					
+						state_PPE_TST(idx_UE,:) = 0;
 					end
-
-					% 還原
-					Dis_Connect_Reason = 0;
-					
-				elseif Dis_Connect_Reason == 3
-					n_Block_UE = n_Block_UE + 1;
-
-					% 因為UE還在等 ，所以也算被Block
-					n_Block_Waiting_BlockTimer = n_Block_Waiting_BlockTimer + 1;
-
-					% 還原
-					Dis_Connect_Reason = 0;				
 				end
-			end
-
-		else %(idx_UEcnct_TST(idx_UE) ~= 0): 有人正在服務我 
-
-			% --------------- %
-			% 更新Throuhgput  %
-			% --------------- %
-			[UE_Throughput(idx_UE)] = Non_CoMP_Update_Throughput(n_MC, n_PC, BS_RB_table, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-													             idx_UE, idx_UEcnct_TST(idx_UE), BW_PRB);
-
-			% -------------------- %
-			% 看A3 Event有沒有成立 %
-			% -------------------- %						
-			if (RsrpBS_dBm(idx_trgt) + CIO_TST(idx_trgt) > RsrpBS_dBm(idx_UEcnct_TST(idx_UE)) + CIO_TST(idx_UEcnct_TST(idx_UE)) + HHM)
-
-				% A3 Event一旦trigger，TTT就開始數
-				if (timer_TTT_TST(idx_UE) <= t_TTT && timer_TTT_TST(idx_UE) > 0)
-
-					% 單純減TTT
-					timer_TTT_TST(idx_UE) = timer_TTT_TST(idx_UE) - t_d;
-					if (timer_TTT_TST(idx_UE) < 1e-5)	% [SPECIAL CASE] 0930
-						timer_TTT_TST(idx_UE) = 0;		% [SPECIAL CASE]
-					end 
-
-				elseif (timer_TTT_TST(idx_UE) == 0)	
-					% ==================================================================== %	% ================================== %
-					%     -----    ------    -----             -------   -----   -------   %	%   ------  ------   ------  -   --	 %
-					%    /         |     )  (                     |     (           |      %	%   |     ) |     \  |     )  \ /	 %
-					%   |     ---  |-----    -----     o -_       |      -----      |      %	%   ------  |      | ------    V 	 %
-					%    \     |   |              )    | | |      |           )     |      %	%   |     ) |     /  |     \   |	 %
-					%     -----    -         -----     - - -      -      -----      -      %	%   ------  ------   -     -   -	 %
-					% ==================================================================== %	% ================================== %
-					% distance_UE_target = norm(UE_lct(idx_UE,:) - BS_lct(idx_trgt,:));							
-					% % tToS
-					% if idx_trgt <= n_MC
-					% 	GPSinTST_trgtToS(idx_UE) = GPS_fx(BS_lct(idx_trgt,:), MACROCELL_RADIUS, UE_lct(idx_UE,:), UE_v(idx_UE,:)) - t_TTT; % 2017.01.21
-					% else  % idx_trgt > n_MC
-					% 	GPSinTST_trgtToS(idx_UE) = GPS_fx(BS_lct(idx_trgt,:), distance_UE_target, UE_lct(idx_UE,:), UE_v(idx_UE,:)) - t_TTT; % 2017.01.21
-					% end
-
-					% Willie的演算法
-					% if GPSinTST_trgtToS(idx_UE) > TST_HD
-						% 通過A3 Event ---> 數完TTT ---> Time of Stay Threshold大於TST_HD ---> 接下來檢查夠不夠資源
-
-					% Handover Call來拿RB
-					temp_idx_UEcnct_TST = idx_UEcnct_TST(idx_UE); % 暫存的，來紀錄從哪裡handover到哪裡
-					[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), Dis_Handover_Reason] = HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-									                                                                                                                    idx_UE, idx_UEcnct_TST(idx_UE), idx_trgt, UE_Throughput(idx_UE), GBR, BW_PRB);
-					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-
-					if idx_UEcnct_TST(idx_UE) == idx_trgt
-						% !!!!!!!!!!成功Handvoer到Target Cell!!!!!!!!!!
-						% ---------------- %
-						% Handover次數計算 %
-						% ---------------- %
-						n_HO_UE_TST(idx_UE)   = n_HO_UE_TST(idx_UE)   + 1;
-						n_HO_BS_TST(idx_trgt) = n_HO_BS_TST(idx_trgt) + 1;	% Only for target cell
-
-						% ----------------------------------- %
-						% 看Handover是從什麼Cell換到什麼Cell  %
-						% ----------------------------------- %
-						if     temp_idx_UEcnct_TST <= n_MC && idx_UEcnct_TST(idx_UE) <= n_MC
-							n_HO_M2M = n_HO_M2M + 1;
-						elseif temp_idx_UEcnct_TST <= n_MC && idx_UEcnct_TST(idx_UE) >  n_MC
-							n_HO_M2P = n_HO_M2P + 1;
-						elseif temp_idx_UEcnct_TST >  n_MC && idx_UEcnct_TST(idx_UE) <= n_MC
-							n_HO_P2M = n_HO_P2M + 1;
-						elseif temp_idx_UEcnct_TST >  n_MC && idx_UEcnct_TST(idx_UE) >  n_MC
-							n_HO_P2P = n_HO_P2P + 1;
-						end	
-
-						% ------------------------------------- %
-						% 記錄該UE在該時間點是否執行了Handover  %
-						% ------------------------------------- %
-						logical_HO(idx_UE) = 1;	% Handover success.
-
-						% --------- %
-						% TTT Reset %
-						% --------- %
-						timer_TTT_TST(idx_UE) = t_TTT;	% 2016.12.28
-
-						% --------------------- %
-						% Ping-Pong Rate UPDATE %
-						% --------------------- %
-						PPR_5s_TST(idx_UE)    = n_PPE_5s_TST(idx_UE) / n_HO_UE_TST(idx_UE);	% 2017.01.01
-					else
-						Handover_Failure_times = Handover_Failure_times + 1;
-
-						% Handover失敗了，看是Handover誰而失敗，阿為什麼失敗，計錄下來
-						if Dis_Handover_Reason == 1
-							if idx_trgt <= n_MC
-								Handover_to_Macro_Failure_NoRB_times = Handover_to_Macro_Failure_NoRB_times + 1;
-							else
-								Handover_to_Pico_Failure_NoRB_times  = Handover_to_Pico_Failure_NoRB_times + 1;
-							end
-
-						elseif Dis_Handover_Reason == 2
-							if idx_trgt <= n_MC
-								Handover_to_Macro_Failure_RBNotGood_times = Handover_to_Macro_Failure_RBNotGood_times + 1;										
-							else
-								Handover_to_Pico_Failure_RBNotGood_times  = Handover_to_Pico_Failure_RBNotGood_times + 1;
-							end
-						end
-						Dis_Handover_Reason = 0;
-
-						% ------------------------------------- %
-						% 記錄該UE在該時間點是否執行了Handover  %
-						% ------------------------------------- %
-						logical_HO(idx_UE) = 0;	% Handover fail
-					end
-					% end
-				end		
-			else
-				% 沒有Handover !!!
-				logical_HO(idx_UE) = 0;
-
-				% TTT Reset
-				timer_TTT_TST(idx_UE) = t_TTT;
-			end
-			% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-
-            % ----------------------------------------------------------- %
-			% 如果(1)沒有過A3 Event               __\  就會走以下的流程   %
-			%     (2)過了但是Target Cell沒有資源    /	                  %
-			% ----------------------------------------------------------- %			
-			if logical_HO(idx_UE) == 0
-
-				% ------------------------------------------------------ %
-				% 如果Throughput < GBR，先來換換看，這裡注意一定要先換   %
-				% ------------------------------------------------------ %
-				if UE_Throughput(idx_UE) < GBR
-					if idx_UEcnct_TST(idx_UE) <= n_MC
-						%  看能不能換個RB 位置 					
-						if UE_Throughput(idx_UE) < GBR && (isempty(find(UE_RB_used(idx_UE,:) == 1)) == 0) && (isempty(find(BS_RB_table(idx_UEcnct_TST(idx_UE),:) == 0)) == 0)
-							[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_Serving_change_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-								                                                                                          idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);						                                                                                          
-						end
-					else
-						%  看能不能換個RB 位置 					
-						if UE_Throughput(idx_UE) < GBR && (isempty(find(UE_RB_used(idx_UE, 1:Pico_part) == 1)) == 0) && (isempty(find(BS_RB_table(idx_UEcnct_TST(idx_UE),:) == 0)) == 0)
-							[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_Serving_change_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-								                                                                                          idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);		                                                                                          
-						end
-					end
-
-					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-				end
-
-				% ------------------------------------ %
-				% 如果Throughput >= GBR，看能不能丟RB  %
-				% ------------------------------------ %
-				if UE_Throughput(idx_UE) >= GBR
-					% 把頻譜效率 = 0的RB丟掉，如果還可以再丟，那就繼續丟
-					[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE)] = Non_CoMP_throw_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-																									     idx_UE, idx_UEcnct_TST(idx_UE), GBR, BW_PRB);
-
-					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-				end
-
-
-				% ---------------------------------------------------- %
-				% 再來看UE的Throughput狀況怎樣，再來看說要不要多拿RB   %
-				% ---------------------------------------------------- %
-				if UE_Throughput(idx_UE) < GBR
-					[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = Non_CoMP_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-																															idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);																											
-					
-					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-				end
-
-
-				% ----------------------------------------------------------------- %
-				% 總於言之呢，Throughput有過QoS，就是OK啦，如果不ok就不會進來這了   %
-				% ----------------------------------------------------------------- %
-				if UE_Throughput(idx_UE) >= GBR
-					Dis_Connect_Reason = 0;
-				end
-			end 
-
-
-			% ---------------------------------- %
-			% 計算UE Call Drop and BS Call Drop  %
-			% ---------------------------------- %
-			if Dis_Connect_Reason == 0          % 會進來這代表 (1)UE handover成功 (2)沒有handover or handover失敗，但是UE成功連回Serving  Cell
-
-				% Dropping timer 重置為 1sec					
-				timer_Drop_OngoingCall_NoRB(idx_UE) = t_T310;
-				timer_Drop_OngoingCall_RBNotGood(idx_UE) = t_T310;
-
-				% 還原
-				Dis_Connect_Reason = 0;
-			else
-				if Dis_Connect_Reason == 1      % 會進來這裡就是  (1)找Serving Cell要資源，Serving Cell說資源沒了
-					if timer_Drop_OngoingCall_NoRB(idx_UE) <= t_T310 && timer_Drop_OngoingCall_NoRB(idx_UE) > 0
-						timer_Drop_OngoingCall_NoRB(idx_UE) = timer_Drop_OngoingCall_NoRB(idx_UE) - t_d;
-						if timer_Drop_OngoingCall_NoRB(idx_UE) < 1e-5	% [SPECIAL CASE]
-							timer_Drop_OngoingCall_NoRB(idx_UE) = 0;		% [SPECIAL CASE]
-						end 
-
-						% 還原
-						Dis_Connect_Reason = 0;
-
-					elseif timer_Drop_OngoingCall_NoRB(idx_UE) == 0
-
-						% Drop記上一筆
-						n_Drop_UE = n_Drop_UE + 1;
-
-						% 該UE因為Cell的資源不夠被放棄						
-						CDR_BS(idx_UEcnct_TST(idx_UE)) = CDR_BS(idx_UEcnct_TST(idx_UE)) + 1;
-
-						% 看UE是被Macro還是Pico說資源不夠，而把你斷掉的
-						if idx_UEcnct_TST(idx_UE) <= n_MC
-							Drop_OngoingCall_NoRB_Macro = Drop_OngoingCall_NoRB_Macro + 1;								
-						else
-							Drop_OngoingCall_NoRB_Pico  = Drop_OngoingCall_NoRB_Pico + 1;
-						end
-
-						% 把RB還給Serving Cell
-						if idx_UEcnct_TST(idx_UE) <= n_MC
-							for RB_index = 1:1:n_ttoffered
-								if BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index) == 1 && UE_RB_used(idx_UE, RB_index) == 1
-									BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index)    = 0;
-									BS_RB_who_used(idx_UEcnct_TST(idx_UE), RB_index) = 0;
-									UE_RB_used(idx_UE, RB_index)                     = 0;
-								end
-							end
-						else
-							for RB_index = 1:1:Pico_part
-								if BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index) == 1 && UE_RB_used(idx_UE, RB_index) == 1
-									BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index)    = 0;
-									BS_RB_who_used(idx_UEcnct_TST(idx_UE), RB_index) = 0;
-									UE_RB_used(idx_UE, RB_index)                     = 0;
-								end
-							end
-						end		
-						idx_UEcnct_TST(idx_UE) = 0; % 結束連線
-						UE_Throughput(idx_UE)  = 0; % UE的throughput歸零
-
-						% Dropping timer 重置為 1sec
-						timer_Drop_OngoingCall_NoRB(idx_UE) = t_T310;
-						timer_Drop_OngoingCall_RBNotGood(idx_UE) = t_T310;
-
-						% 還原
-						Dis_Connect_Reason = 0;
-					end
-
-				elseif Dis_Connect_Reason == 2  % 會進來這裡就是  (1)找Serving Cell要資源，發現Serving Cell的RB質量不夠
-
-					if timer_Drop_OngoingCall_RBNotGood(idx_UE) <= t_T310 && timer_Drop_OngoingCall_RBNotGood(idx_UE) > 0
-						% 倒數Drop timer 
-						timer_Drop_OngoingCall_RBNotGood(idx_UE) = timer_Drop_OngoingCall_RBNotGood(idx_UE) - t_d;
-						if timer_Drop_OngoingCall_RBNotGood(idx_UE) < 1e-5	% [SPECIAL CASE]
-							timer_Drop_OngoingCall_RBNotGood(idx_UE) = 0;		% [SPECIAL CASE]
-						end 
-
-						% 還原
-						Dis_Connect_Reason = 0;
-
-					elseif timer_Drop_OngoingCall_RBNotGood(idx_UE) == 0
-
-						% Drop記上一筆
-						n_Drop_UE = n_Drop_UE + 1;
-
-						% 該Ongoing Call因為看到的RB之頻譜效率都太低了,  並且持續1秒, 所以被拒絕
-						CDR_BS(idx_UEcnct_TST(idx_UE))  = CDR_BS(idx_UEcnct_TST(idx_UE)) + 1;
-
-						% 這裡是因為UE自己走太遠，但在之間如果有想Handover但被拒絕，導致他走太遠沒人服務，這也要算一筆							
-						if idx_UEcnct_TST(idx_UE) <= n_MC
-							Drop_OngoingCall_RBNotGood_Macro = Drop_OngoingCall_RBNotGood_Macro + 1;
-						else
-							Drop_OngoingCall_RBNotGood_Pico  = Drop_OngoingCall_RBNotGood_Pico + 1;
-						end		
-
-						% 把RB還給Serving Cell
-						if idx_UEcnct_TST(idx_UE) <= n_MC
-							for RB_index = 1:1:n_ttoffered
-								if BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index) == 1 && UE_RB_used(idx_UE, RB_index) == 1
-									BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index)    = 0;
-									BS_RB_who_used(idx_UEcnct_TST(idx_UE), RB_index) = 0;
-									UE_RB_used(idx_UE, RB_index)                     = 0;
-								end
-							end
-						else
-							for RB_index = 1:1:Pico_part
-								if BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index) == 1 && UE_RB_used(idx_UE, RB_index) == 1
-									BS_RB_table(idx_UEcnct_TST(idx_UE), RB_index)    = 0;
-									BS_RB_who_used(idx_UEcnct_TST(idx_UE), RB_index) = 0;
-									UE_RB_used(idx_UE, RB_index)                     = 0;
-								end
-							end
-						end	
-						idx_UEcnct_TST(idx_UE) = 0; % 結束連線
-						UE_Throughput(idx_UE)  = 0; % UE的throughput歸零
-
-						% Dropping timer 重置為 1sec
-						timer_Drop_OngoingCall_NoRB(idx_UE) = t_T310;
-						timer_Drop_OngoingCall_RBNotGood(idx_UE) = t_T310;
-						% 還原
-						Dis_Connect_Reason = 0;
-					end						
-				end
-			end
-			% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-
-			% --------------------------------- %
-			% 主要統計: 檢查Ping-Pong有沒有發生 %
-			% --------------------------------- %
-			if logical_HO(idx_UE) == 1
-
-				% ---------------------------------------------------- %
-				% 計算Ping-Pong Effect是否有發生，跟Performance 的計算 %
-				% 有兩個KPI: (1) 1秒內發生碰撞   (2) 5秒內發生碰撞     %
-				% ---------------------------------------------------- %
-				state_PPE_TST(idx_UE,:) = PingPong_Update(state_PPE_TST(idx_UE,:), idx_UEcnct_TST(idx_UE), idx_t);
-				% ===/* Ping Pong State Update [1 sec] */===
-				if    (state_PPE_TST(idx_UE,1) == state_PPE_TST(idx_UE,3) ...
-					&& state_PPE_TST(idx_UE,1) ~= state_PPE_TST(idx_UE,2) ...
-					&& state_PPE_TST(idx_UE,4) -  state_PPE_TST(idx_UE,5) <= MTS_1s ...
-					&& prod(state_PPE_TST(idx_UE,:)) ~= 0)	% 2017.01.04 Live 2 Dead 2 Live is not Ping-Pong, Dead 2 Live 2 Dead either.
-					% Ping-Pong Effect Occur
-					n_PPE_1s_TST(idx_UE) = n_PPE_1s_TST(idx_UE) + 1; % [PRFM]
-				end
-				% ===/* Ping Pong State Update [5 sec] */===
-				if    (state_PPE_TST(idx_UE,1) == state_PPE_TST(idx_UE,3) ...
-					&& state_PPE_TST(idx_UE,1) ~= state_PPE_TST(idx_UE,2) ...
-					&& state_PPE_TST(idx_UE,4) -  state_PPE_TST(idx_UE,5) <= MTS_5s ...
-					&& prod(state_PPE_TST(idx_UE,:)) ~= 0)	% 2017.01.04 Live 2 Dead 2 Live is not Ping-Pong, Dead 2 Live 2 Dead either.
-					% Ping-Pong Effect Occur
-					n_PPE_5s_TST(idx_UE) = n_PPE_5s_TST(idx_UE) + 1; % [PRFM]
-					PPR_5s_TST(idx_UE)   = n_PPE_5s_TST(idx_UE) / n_HO_UE_TST(idx_UE);	% 2016.12.15
-				end
-				% 還原
-				logical_HO(idx_UE) = 0;		
-
-			else
-				if UE_CoMP_orNOT(idx_UE) == 1 % 如果開始執行CoMP，這時Ping-pong  effect 不存在					
-					state_PPE_TST(idx_UE,:) = 0;
-				end
-			end
-		end	
-
-        % Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);;
+			end	
+		end
 
 		% ========================================================================================================================== %
 		% 以下等等用來算Cell的CBR                                                                                                    % 
 		% Cell角度的CBR: 若UE沒有連上預期的連線目標，反而到最後UE變得沒有Serving   Cell，這時這個Block Call就會算在預期的連線Cell上  %
 		% Cell角度的CDR: 若UE本身有Serving Cell，但到最後UE離開Serving  Cell，這筆Call Drop就算在Serving Cell上                      %
 		% ========================================================================================================================== %
+		if temp_CoMP_state == 0
+			if UE_CoMP_orNOT(idx_UE) == 0
 
-		if idx_UEprey_TST(idx_UE) ~= 0     % 該UE是有預期的連線目標，正常都會有
-			if idx_UEcnct_TST(idx_UE) == 0 % UE有預期目標，但最後卻沒有Serving  Cell
-				n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
+				% 原本沒做CoMP，後來也沒有做CoMP				
+				if idx_UEprey_TST(idx_UE) ~= 0     % 該UE是有預期的連線目標，正常都會有
+					if idx_UEcnct_TST(idx_UE) == 0 % UE有預期目標，但最後卻沒有Serving  Cell
+						n_DeadUE_BS(idx_UEprey_TST(idx_UE)) = n_DeadUE_BS(idx_UEprey_TST(idx_UE)) + 1;
 
-			else % idx_UEcnct_TST(idx_UE) ~= 0
-				n_LiveUE_BS(idx_UEcnct_TST(idx_UE)) = n_LiveUE_BS(idx_UEcnct_TST(idx_UE)) + 1;
+					else % idx_UEcnct_TST(idx_UE) ~= 0
+						n_LiveUE_BS(idx_UEcnct_TST(idx_UE)) = n_LiveUE_BS(idx_UEcnct_TST(idx_UE)) + 1;
+					end
+				else
+					fprintf('BS_CBR calculation BUG\n');
+				end	
+			else
+				% 原本沒做CoMP，後來有做CoMP	
+				n_LiveUE_BS(idx_UEcnct_CoMP(idx_UE, 1)) = n_LiveUE_BS(idx_UEcnct_CoMP(idx_UE, 1)) + 0.5;
+				n_LiveUE_BS(idx_UEcnct_CoMP(idx_UE, 2)) = n_LiveUE_BS(idx_UEcnct_CoMP(idx_UE, 2)) + 0.5;
 			end
-		end	
+		else
+			if UE_CoMP_orNOT(idx_UE) == 0
+				if idx_UEcnct_TST(idx_UE) == 0
+					n_DeadUE_BS(temp_Serving) = n_DeadUE_BS(temp_Serving) + 0.5;
+					n_DeadUE_BS(temp_Cooperating) = n_DeadUE_BS(temp_Cooperating) + 0.5;
+				else
+					n_LiveUE_BS(temp_Serving) = n_LiveUE_BS(temp_Serving) + 1;
+				end
+
+			else
+				n_LiveUE_BS(temp_Serving)     = n_LiveUE_BS(temp_Serving) + 0.5;
+				n_LiveUE_BS(temp_Cooperating) = n_LiveUE_BS(temp_Cooperating) + 0.5;
+			end	
+		end
 
 		% ============================================================================================ %
 		%                    ________          /                     |                      |          %
@@ -929,22 +987,27 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 			end
 		end
 
-    end 
-    % 結束Loop 2(UE的Loop)
+    end
 
+    % 結束Loop 2(UE的Loop)
     % ======================== %
     % 算Macro跟Pico的服務人數  %
     % ======================== %
     for idx_UE = 1:1:n_UE  
 		Macro_Serving_Num_change(round(idx_t/t_d), 1)        = length(find(0 < idx_UEcnct_TST & idx_UEcnct_TST <= n_MC));
 		Pico_NonCoMP_Serving_Num_change(round(idx_t/t_d), 1) = length(find(idx_UEcnct_TST > n_MC));
+		Pico_CoMP_Serving_Num_change(round(idx_t/t_d), 1)    = length(nonzeros(UE_CoMP_orNOT)); 
     end
 
     % ============================== %
     % 算BS所使用的Resource Block數量 %
     % ============================== %
     for idx_BS = 1:1:n_BS
-    	BS_RB_consumption(idx_BS) = BS_RB_consumption(idx_BS) + length(nonzeros(BS_RB_table(idx_BS,:)));
+    	if idx_BS <= n_MC
+    		BS_RB_consumption(idx_BS) = BS_RB_consumption(idx_BS) + length(nonzeros(BS_RB_table(idx_BS, :)));
+    	else
+    		BS_RB_consumption(idx_BS) = BS_RB_consumption(idx_BS) + length(nonzeros(BS_RB_table(idx_BS, 1:Pico_part)));
+    	end    	
     end
 
 	% ======================================== %
@@ -960,12 +1023,12 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 	UE_survive = UE_survive + (n_UE - n_Block_UE - n_Drop_UE);
 	
 	% 重置
-	n_Block_UE = 0;
-	n_Drop_UE  = 0;
+	n_Block_UE  = 0;	
+	n_Drop_UE   = 0;
 
 	% ======================================== %
     % 算BS的Call Block Rate and Call Drop Rate %
-	% ======================================== %	
+	% ======================================== %
 	for idx_BS = 1:n_BS
 		% BS Call Block Rate
 		if n_DeadUE_BS(idx_BS) == 0 && n_LiveUE_BS(idx_BS) == 0    % 如果沒有人把該BS 當目標，該BS 的CBR = 0
@@ -975,7 +1038,7 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 		end
 
 		% BS Call Drop Rate
-		if BS_last_time_serving(idx_BS) == 0 && CDR_BS(idx_BS) == 0
+		if n_HO_BS_TST(idx_BS) == 0 && CDR_BS(idx_BS) == 0
 			CDR_BS_TST(idx_BS) = 0;
 		else
 			CDR_BS_TST(idx_BS) = CDR_BS(idx_BS) / (CDR_BS(idx_BS) + n_HO_BS_TST(idx_BS));
@@ -983,9 +1046,9 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 	end
 
 	% 重置
-	n_DeadUE_BS(1,:)          = 0;
-	n_LiveUE_BS(1,:)          = 0;
-
+	n_DeadUE_BS(1,:) = 0;
+	n_LiveUE_BS(1,:) = 0;
+	
 	% ----------- %
 	% 更新Loading %
 	% ----------- %
@@ -1013,20 +1076,21 @@ for idx_t = t_start : t_d : t_simu								            % [sec] % 0.1 sec per loop
 				Q_bonus_TSTc(idx_BS)  = FQc7_Qbonus(Q_reward_TSTc(idx_BS), FQ_BS_DF_TST, V_fx_new_TSTc(idx_BS), ...
 																							Q_fx_old_TSTc(idx_BS));
 				% Q Update
-					Q_Table_TSTc(:,:,idx_BS) = FQc8_Qupdate(Q_Table_TSTc(:,:,idx_BS), idx_subAct_choosed_old_TSTc(idx_BS,:), ...
+				Q_Table_TSTc(:,:,idx_BS) = FQc8_Qupdate(Q_Table_TSTc(:,:,idx_BS), idx_subAct_choosed_old_TSTc(idx_BS,:), ...
 															FQ_BS_LR_TST, Q_bonus_TSTc(idx_BS), DoT_Rule_Old_TSTc(idx_BS,:));
 			end
 			% Global Action
 			[GlobalAct_TSTc(idx_BS),idx_subAct_choosed_new_TSTc(idx_BS,:)] = FQc3_GlobalAction(DoT_Rule_New_TSTc(idx_BS,:), ...
 																									Q_Table_TSTc(:,:,idx_BS));
 			%這邊GlobalAct是當作變化量，要在加上前一次的CIO，當作下一次真正使用的CIO    (目的是為了不讓CIO變化太大) 
-			if     (CIO_TST(idx_BS) + GlobalAct_TSTc(idx_BS) < -5)
-				CIO_TST(idx_BS) = -5;
-			elseif (CIO_TST(idx_BS) + GlobalAct_TSTc(idx_BS) > 5)
-				CIO_TST(idx_BS) = 5;
-			else
-				CIO_TST(idx_BS) = CIO_TST(idx_BS) + GlobalAct_TSTc(idx_BS);
-			end
+			% if     (CIO_TST(idx_BS) + GlobalAct_TSTc(idx_BS) < -5)
+			% 	CIO_TST(idx_BS) = -5;
+			% elseif (CIO_TST(idx_BS) + GlobalAct_TSTc(idx_BS) > 5)
+			% 	CIO_TST(idx_BS) = 5;
+			% else
+			% 	CIO_TST(idx_BS) = CIO_TST(idx_BS) + GlobalAct_TSTc(idx_BS);
+			% end
+			CIO_TST(idx_BS) = GlobalAct_TSTc(idx_BS);
 
 			% 計算Q-function 
 			Q_fx_new_TSTc(idx_BS) = FQc4_Qfunction(DoT_Rule_New_TSTc(idx_BS,:), Q_Table_TSTc(:,:,idx_BS), ...
