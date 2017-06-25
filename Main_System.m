@@ -387,7 +387,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		Dis_Connect_Reason  = 0;
 		Dis_Handover_Reason = 0;
 
-		if idx_t >= 2.8
+		if idx_t >= 20
 			a = 1;
 		end
 		if idx_UE == 64
@@ -1434,6 +1434,12 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 			CDR_BS_TST(idx_BS) = CDR_BS(idx_BS) / (CDR_BS(idx_BS) + n_HO_BS_TST(idx_BS));
 		end
 	end
+
+	% 重置
+	n_LiveUE_BS(1,:) = 0;
+	n_DeadUE_BS(1,:) = 0;
+	n_HO_BS_TST(1,:) = 0;
+	CDR_BS(1,:)      = 0;
 	
 	% ----------- %
 	% 更新Loading %
@@ -1486,13 +1492,6 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		Q_fx_old_TSTc               = Q_fx_new_TSTc;
 		idx_subAct_choosed_old_TSTc = idx_subAct_choosed_new_TSTc;
 		DoT_Rule_Old_TSTc           = DoT_Rule_New_TSTc;
-
-		% 每次FQ一結束，全部在重新記錄一次
-		n_LiveUE_BS(1,:) = 0;
-		n_DeadUE_BS(1,:) = 0;
-		n_HO_BS_TST(1,:) = 0;
-		CDR_BS(1,:)      = 0;
-
 	end
 	% 結束 Loop 4
 
