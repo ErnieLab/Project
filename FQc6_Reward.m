@@ -2,7 +2,7 @@
 
 function reward = FQc6_Reward(LOAD,CBR,CDR,type)
 
-	WGT = [2, 8, 6];
+	WGT = [2, 5, 4];
 
     switch(type)
 		
