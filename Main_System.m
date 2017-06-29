@@ -37,7 +37,7 @@ n_Measured = t_simu/t_d;	                                                % # mea
 % -----------------------------------------------------
 rectEdge = 4763;															% 系統的邊界 [meter]
 load('MC_lct_4sq');															% 大細胞的位置讀出來，矩陣叫:  Macro_location		
-load('PC_lct_4sq_n250_random');                                         % 小細胞的位置讀出來 ，矩陣叫: Pico_location
+load('PC_lct_4sq_n250_MP1000_PP40');                                         % 小細胞的位置讀出來 ，矩陣叫: Pico_location
 BS_lct = [Macro_location ; Pico_location];								    % 全部細胞的位置
 
 P_MC_dBm    =  46;															% 大細胞 total TX power (全部頻帶加起來的power) [dBm]
@@ -286,6 +286,8 @@ BS_RB_who_used  = zeros(n_MC + n_PC, n_ttoffered);         % Cell的RB看是哪�
 UE_RB_used      = zeros(n_UE, n_ttoffered);                % UE使用了哪些RB          0:未用 1:已用
 UE_Throughput   = zeros(1, n_UE);                          % 顯示每個UE的Throughput  
 
+UE_surviving    = 0;
+
 UE_CoMP_orNOT   = zeros(1, n_UE);                          % 判斷UE又沒有在做CoMP  0:沒有 1:正在做CoMP                    
 idx_UEcnct_CoMP = zeros(n_UE, 2);                          % 看UE是給哪兩個Cell做CoMP : Colunm1 是 Serving Cell, Colunm2 是 Cooperating Cell
 CoMP_Threshold  = 4;                                       % 執行CoMP的RSRP Threshold，一定要大於 3dB  (dBm)
@@ -323,6 +325,7 @@ Drop_CoMPCall_RBNotGood_Pico     = 0;                      % CoMPCall因為發�
 
 
 UE_CDR                     = 0;                            % Call Drop Rate: 全部UE跑完後， N(被Drop的人數) / n_UE
+Average_UE_CDR             = 0;
 
 CDR_BS                     = zeros(1,n_BS);                % 每個Base Station把UE給Drop的次數 
 CBR_BS                     = zeros(1,n_BS);                % 每個Base Station把UE給Block的次數
@@ -379,8 +382,10 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 	AMP_Noise  = LTE_NoiseFloor_watt * abs(randn(1));                            % 每個時間點的白高斯 雜訊都不一樣 [watt/RB]
 
-	CIO_TST(1:1:n_MC) = -5;
+	% CIO_TST(1:1:n_MC) = -5;
 
+	UE_surviving = 0;
+	UE_surviving = length(nonzeros(UE_CoMP_orNOT)) + length(nonzeros(idx_UEcnct_TST));
 
 	% Loop 2: User	
 	% 寫收訊號的，A3 event，統計各個Performance，關係到RB 的要自己來 ( 細胞loading的問題, UE's SINR計算 )
@@ -1408,7 +1413,10 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 	UE_CBR = UE_CBR + (n_Block_UE);
 
 	% UE Call Drop Rate 
-	UE_CDR  = UE_CDR + (n_Drop_UE);
+	Average_UE_CDR = Average_UE_CDR + n_Drop_UE*(UE_surviving/n_UE);
+
+	UE_CDR      = UE_CDR + (n_Drop_UE);
+	
 
 	% UE平均存活人數	
 	UE_survive = UE_survive + (n_UE - n_Block_UE - n_Drop_UE);
