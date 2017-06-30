@@ -37,7 +37,7 @@ n_Measured = t_simu/t_d;	                                                % # mea
 % -----------------------------------------------------
 rectEdge = 4763;															% ç³»çµ±?„é???[meter]
 load('MC_lct_4sq');															% å¤§ç´°?ç?ä½ç½®è®?‡ºä¾†ï??©é™£??  Macro_location		
-load('PC_lct_4sq_n250_MP1000_PP40');                                         % å°ç´°?ç?ä½ç½®è®?‡ºä¾?ï¼ŒçŸ©??«: Pico_location
+load('PC_lct_4sq_n250_MP520_PP40');                                         % å°ç´°?ç?ä½ç½®è®?‡ºä¾?ï¼ŒçŸ©??«: Pico_location
 BS_lct = [Macro_location ; Pico_location];								    % ?¨éƒ¨ç´°è??„ä?ç½?
 
 P_MC_dBm    =  46;															% å¤§ç´°??total TX power (?¨éƒ¨?»å¸¶? èµ·ä¾†ç?power) [dBm]
@@ -382,7 +382,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 	AMP_Noise  = LTE_NoiseFloor_watt * abs(randn(1));                            % æ¯å??‚é?é»ç??½é????œè??½ä?ä¸?¨£ [watt/RB]
 
-	% CIO_TST(1:1:n_MC) = -5;
+	CIO_TST(1:1:n_MC) = -5;
 
 	UE_surviving = 0;
 	UE_surviving = length(nonzeros(UE_CoMP_orNOT)) + length(nonzeros(idx_UEcnct_TST));

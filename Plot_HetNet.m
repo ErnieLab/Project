@@ -4,7 +4,7 @@
 clc, clear, close all
 
 rectEdge = 4763;
-load('MC_lct_4sq'); load('PC_lct_4sq_n250_MP520_PP150_250');
+load('MC_lct_4sq'); load('PC_lct_4sq_n250_MP520_PP40');
 
 n_MC = length(Macro_location);
 n_PC = length(Pico_location);

@@ -37,7 +37,7 @@ n_Measured = t_simu/t_d;	                                                % # mea
 % -----------------------------------------------------
 rectEdge = 4763;															% 系統的邊界 [meter]
 load('MC_lct_4sq');															% 大細胞的位置讀出來，矩陣叫:  Macro_location		
-load('PC_lct_4sq_n250_MP1000_PP40');                                         % 小細胞的位置讀出來 ，矩陣叫: Pico_location
+load('PC_lct_4sq_n250_MP520_PP40');                                         % 小細胞的位置讀出來 ，矩陣叫: Pico_location
 BS_lct = [Macro_location ; Pico_location];								    % 全部細胞的位置
 
 P_MC_dBm    =  46;															% 大細胞 total TX power (全部頻帶加起來的power) [dBm]
@@ -382,7 +382,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 	AMP_Noise  = LTE_NoiseFloor_watt * abs(randn(1));                            % 每個時間點的白高斯 雜訊都不一樣 [watt/RB]
 
-	% CIO_TST(1:1:n_MC) = -5;
+	CIO_TST(1:1:n_MC) = -5;
 
 	UE_surviving = 0;
 	UE_surviving = length(nonzeros(UE_CoMP_orNOT)) + length(nonzeros(idx_UEcnct_TST));
