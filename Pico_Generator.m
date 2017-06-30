@@ -42,7 +42,7 @@ for Pico_index = 10:1:n_Pico
 	end
 	mid_d_PCPC = min(d_PCPC);
 
-	while(min_d_PCMC < 1000 || mid_d_PCPC < 40 ) % min_d_PCMC: Picoè·ŸMacro?„è??¢é???  mid_d_PCPC: Picoè·ŸPico?„è??¢é???
+	while(min_d_PCMC < 520 || mid_d_PCPC < 40 || mid_d_PCPC > 250 ) % min_d_PCMC: Picoè·ŸMacro?„è??¢é???  mid_d_PCPC: Picoè·ŸPico?„è??¢é???
 		                                       % 3GPP?„PPP model?ƒæ•¸??min_d_PCMC < 75 || mid_d_PCPC < 40)
 		Pico_location(Pico_index, 1) = (rand - 0.5)*edge;
 		Pico_location(Pico_index, 2) = (rand - 0.5)*edge;
@@ -86,7 +86,7 @@ set(gcf,'name','Environment');
 %               Pico 300??   |
 %                   |         |
 %                   v         v
-save PC_lct_4sq_n250_MP1000_PP40 Pico_location
+save PC_lct_4sq_n250_MP520_PP40 Pico_location
 %        ^     ^         ^
 %        |     |         |
 %     Picoä½ç½® |         |
