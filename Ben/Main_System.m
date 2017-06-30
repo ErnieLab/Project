@@ -37,7 +37,7 @@ n_Measured = t_simu/t_d;	                                                % # mea
 % -----------------------------------------------------
 rectEdge = 4763;															% Á≥ªÁµ±?ÑÈ???[meter]
 load('MC_lct_4sq');															% Â§ßÁ¥∞?ûÁ?‰ΩçÁΩÆËÆ?á∫‰æÜÔ??©Èô£??  Macro_location		
-load('PC_lct_4sq_n250_MP1000_PP40');                                         % Â∞èÁ¥∞?ûÁ?‰ΩçÁΩÆËÆ?á∫‰æ?ÔºåÁü©??è´: Pico_location
+load('PC_lct_4sq_n250_MP520_PP40');                                         % Â∞èÁ¥∞?ûÁ?‰ΩçÁΩÆËÆ?á∫‰æ?ÔºåÁü©??è´: Pico_location
 BS_lct = [Macro_location ; Pico_location];								    % ?®ÈÉ®Á¥∞Ë??Ñ‰?ÁΩ?
 
 P_MC_dBm    =  46;															% Â§ßÁ¥∞??total TX power (?®ÈÉ®?ªÂ∏∂?†Ëµ∑‰æÜÁ?power) [dBm]
@@ -382,7 +382,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 	AMP_Noise  = LTE_NoiseFloor_watt * abs(randn(1));                            % ÊØèÂ??ÇÈ?ÈªûÁ??ΩÈ????úË??Ω‰?‰∏?®£ [watt/RB]
 
-	% CIO_TST(1:1:n_MC) = -5;
+	CIO_TST(1:1:n_MC) = -5;
 
 	UE_surviving = 0;
 	UE_surviving = length(nonzeros(UE_CoMP_orNOT)) + length(nonzeros(idx_UEcnct_TST));
@@ -1023,7 +1023,11 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 	UE_CBR = UE_CBR + (n_Block_UE);
 
 	% UE Call Drop Rate 
-	Average_UE_CDR = Average_UE_CDR + n_Drop_UE*(UE_surviving/n_UE);
+	if UE_surviving ~= 0
+		Average_UE_CDR = Average_UE_CDR + (n_Drop_UE/UE_surviving);
+	else
+		Average_UE_CDR = Average_UE_CDR + 0;
+	end
 	
 	UE_CDR  = UE_CDR + (n_Drop_UE);
 
