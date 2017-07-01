@@ -357,10 +357,9 @@ Handover_to_Pico_Failure_NoRB_times       = 0;             % ?≥handover?∞Pico‰ΩÜ
 Handover_to_Macro_Failure_RBNotGood_times = 0;             % ?≥handover?∞Macro‰ΩÜÊòØË¢´Ê?ÁµïÁ?Ê¨°Êï∏
 Handover_to_Pico_Failure_RBNotGood_times  = 0;             % ?≥handover?∞Pico‰ΩÜÊòØË¢´Ê?ÁµïÁ?Ê¨°Êï∏
 
+BS_Loading_Record_RB               = zeros(n_BS, (ttSimuT/t_d));
+BS_Loading_Record_Serving_Num      = zeros(n_BS, (ttSimuT/t_d));
 
-Macro_Serving_Num_change        = zeros((ttSimuT/t_d), 1);
-Pico_NonCoMP_Serving_Num_change = zeros((ttSimuT/t_d), 1);
-Pico_CoMP_Serving_Num_change    = zeros((ttSimuT/t_d), 1);
 % ============================================================= %
 %    ________                                                   %
 %   /                                                           %
@@ -998,11 +997,10 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
     % ÁµêÊ?Loop 2(UE?ÑLoop)
     % ======================== %
     % ÁÆóMacroË∑üPico?ÑÊ??ô‰∫∫?? %
-    % ======================== %
-    for idx_UE = 1:1:n_UE  
-		Macro_Serving_Num_change(round(idx_t/t_d), 1)        = length(find(0 < idx_UEcnct_TST & idx_UEcnct_TST <= n_MC));
-		Pico_NonCoMP_Serving_Num_change(round(idx_t/t_d), 1) = length(find(idx_UEcnct_TST > n_MC));
-		Pico_CoMP_Serving_Num_change(round(idx_t/t_d), 1)    = length(nonzeros(UE_CoMP_orNOT)); 
+    % ======================== %    
+    for idx_BS = 1:1:n_BS
+    	BS_Loading_Record_RB(idx_BS, round(idx_t/t_d))          = Load_TST(idx_BS); 
+    	BS_Loading_Record_Serving_Num(idx_BS, round(idx_t/t_d)) = length(find(idx_UEcnct_TST == idx_BS))   	   	
     end
 
     % ============================== %

@@ -357,10 +357,8 @@ Handover_to_Pico_Failure_NoRB_times       = 0;             % 想handover到Pico�
 Handover_to_Macro_Failure_RBNotGood_times = 0;             % 想handover到Macro但是被拒絕的次數
 Handover_to_Pico_Failure_RBNotGood_times  = 0;             % 想handover到Pico但是被拒絕的次數
 
-
-Macro_Serving_Num_change        = zeros((ttSimuT/t_d), 1);
-Pico_NonCoMP_Serving_Num_change = zeros((ttSimuT/t_d), 1);
-Pico_CoMP_Serving_Num_change    = zeros((ttSimuT/t_d), 1);
+BS_Loading_Record_RB             = zeros(n_BS, (ttSimuT/t_d));
+BS_Loading_Record_Serving_Num    = zeros(n_BS, (ttSimuT/t_d));
 % ============================================================= %
 %    ________                                                   %
 %   /                                                           %
@@ -1389,10 +1387,9 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
     % ======================== %
     % 算Macro跟Pico的服務人數  %
     % ======================== %
-    for idx_UE = 1:1:n_UE  
-		Macro_Serving_Num_change(round(idx_t/t_d), 1)        = length(find(0 < idx_UEcnct_TST & idx_UEcnct_TST <= n_MC));
-		Pico_NonCoMP_Serving_Num_change(round(idx_t/t_d), 1) = length(find(idx_UEcnct_TST > n_MC));
-		Pico_CoMP_Serving_Num_change(round(idx_t/t_d), 1)    = length(nonzeros(UE_CoMP_orNOT)); 
+    for idx_BS = 1:1:n_BS
+    	BS_Loading_Record_RB(idx_BS, round(idx_t/t_d))          = Load_TST(idx_BS);
+    	BS_Loading_Record_Serving_Num(idx_BS, round(idx_t/t_d)) = length(find(idx_UEcnct_TST == idx_BS)) + length(find(idx_UEcnct_CoMP(:,1) == idx_BS))*0.5 + length(find(idx_UEcnct_CoMP(:,2) == idx_BS))*0.5;
     end
 
     % ============================== %
