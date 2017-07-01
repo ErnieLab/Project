@@ -37,7 +37,7 @@ n_Measured = t_simu/t_d;	                                                % # mea
 % -----------------------------------------------------
 rectEdge = 4763;															% 系統的邊界 [meter]
 load('MC_lct_4sq');															% 大細胞的位置讀出來，矩陣叫:  Macro_location		
-load('PC_lct_4sq_n250_MP520_PP40');                                         % 小細胞的位置讀出來 ，矩陣叫: Pico_location
+load('PC_lct_4sq_n250_random');                                         % 小細胞的位置讀出來 ，矩陣叫: Pico_location
 BS_lct = [Macro_location ; Pico_location];								    % 全部細胞的位置
 
 P_MC_dBm    =  46;															% 大細胞 total TX power (全部頻帶加起來的power) [dBm]

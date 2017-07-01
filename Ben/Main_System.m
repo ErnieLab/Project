@@ -37,7 +37,7 @@ n_Measured = t_simu/t_d;	                                                % # mea
 % -----------------------------------------------------
 rectEdge = 4763;															% ç³»çµ±?„é???[meter]
 load('MC_lct_4sq');															% å¤§ç´°?ç?ä½ç½®è®?‡ºä¾†ï??©é™£??  Macro_location		
-load('PC_lct_4sq_n250_MP520_PP40');                                         % å°ç´°?ç?ä½ç½®è®?‡ºä¾?ï¼ŒçŸ©??«: Pico_location
+load('PC_lct_4sq_n250_random');                                         % å°ç´°?ç?ä½ç½®è®?‡ºä¾?ï¼ŒçŸ©??«: Pico_location
 BS_lct = [Macro_location ; Pico_location];								    % ?¨éƒ¨ç´°è??„ä?ç½?
 
 P_MC_dBm    =  46;															% å¤§ç´°??total TX power (?¨éƒ¨?»å¸¶? èµ·ä¾†ç?power) [dBm]
