@@ -155,9 +155,9 @@ INT_SSL           = zeros(n_UE,1);	% Interference proposed by SSL
 % ---------/* ‰∏ãÈù¢?ØTST BDRY?ÑÂ?ÂßãÂ?*/-----------------
 % -----------------------------------------------------
 % BS?®Â?
-n_RBoffer_TST   = zeros(1, n_BS);									        % The number of RB a BS offer to UEs inside it
-Load_TST        = zeros(1, n_BS);
-CIO_TST         = zeros(1, n_BS);
+n_RBoffer_TST          = zeros(1, n_BS);									        % The number of RB a BS offer to UEs inside it
+Load_TST               = zeros(1, n_BS);
+CIO_TST                = zeros(1, n_BS);
 
 n_HO_BS_TST     = zeros(1, n_BS);	% Only for target cell			        % KPI: Handover Number of BS
 
@@ -1000,7 +1000,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
     % ======================== %    
     for idx_BS = 1:1:n_BS
     	BS_Loading_Record_RB(idx_BS, round(idx_t/t_d))          = Load_TST(idx_BS); 
-    	BS_Loading_Record_Serving_Num(idx_BS, round(idx_t/t_d)) = length(find(idx_UEcnct_TST == idx_BS))   	   	
+    	BS_Loading_Record_Serving_Num(idx_BS, round(idx_t/t_d)) = length(find(idx_UEcnct_TST == idx_BS));   	   	
     end
 
     % ============================== %

@@ -636,7 +636,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 							% 記錄該UE在該時間點是否執行了Handover  %
 							% ------------------------------------- %
 							logical_HO(idx_UE) = 1;	% Handover success.
-							Dis_Connect_Reason = 0; % 只要是Hnadover成功，Dis_Connect_Reason一定= 0 
+							Dis_Connect_Reason = 0; % 只要是handover成功，Dis_Connect_Reason一定= 0 
 
 							% --------- %
 							% TTT Reset %
@@ -1076,67 +1076,60 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 																														GBR, BW_PRB);
 
 					% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-				end
 
+					if UE_Throughput(idx_UE) < GBR
+						% -------------------------------------------------- %
+						% 上面的方法都沒用了，再來看說可不可以handover出去   %
+						% -------------------------------------------------- %
+						if (timer_TTT_TST(idx_UE) <= t_TTT && timer_TTT_TST(idx_UE) > 0)
 
-				% -------------------------------------------------- %
-				% 上面的方法都沒用了，再來看說可不可以handover出去   %
-				% -------------------------------------------------- %
-				if UE_Throughput(idx_UE) < GBR
-					if (timer_TTT_TST(idx_UE) <= t_TTT && timer_TTT_TST(idx_UE) > 0)
+							% 單純減TTT
+							timer_TTT_TST(idx_UE) = timer_TTT_TST(idx_UE) - t_d;
+							if (timer_TTT_TST(idx_UE) < 1e-5)	% [SPECIAL CASE] 0930
+								timer_TTT_TST(idx_UE) = 0;		% [SPECIAL CASE]
+							end 
 
-						% 單純減TTT
-						timer_TTT_TST(idx_UE) = timer_TTT_TST(idx_UE) - t_d;
-						if (timer_TTT_TST(idx_UE) < 1e-5)	% [SPECIAL CASE] 0930
-							timer_TTT_TST(idx_UE) = 0;		% [SPECIAL CASE]
-						end 
+						elseif (timer_TTT_TST(idx_UE) == 0)	
+							[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE), Dis_Handover_Reason] = CoMP_HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+										                                                                                                                                                                      idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), idx_trgt, idx_UEcnct_CoMP, UE_Throughput(idx_UE), ...
+										                                                                                                                                                                      GBR, BW_PRB);
+							% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+							if UE_CoMP_orNOT(idx_UE) == 0
+								% !!!!!!!!!!成功Handover到Target Cell!!!!!!!!!!
 
-					elseif (timer_TTT_TST(idx_UE) == 0)	
-						[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE), Dis_Handover_Reason] = CoMP_HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-									                                                                                                                                                                      idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), idx_trgt, idx_UEcnct_CoMP, UE_Throughput(idx_UE), ...
-									                                                                                                                                                                      GBR, BW_PRB);
-						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-						if UE_CoMP_orNOT(idx_UE) == 1
-							% !!!!!!!!!!成功Handover到Target Cell!!!!!!!!!!
+								n_HO_UE_TST(idx_UE)   = n_HO_UE_TST(idx_UE)   + 1;
+								n_HO_BS_TST(idx_trgt) = n_HO_BS_TST(idx_trgt) + 1;	% Only for target cell
 
-							% ---------------- %
-							% Handover次數計算 %
-							% ---------------- %
-							n_HO_UE_TST(idx_UE)   = n_HO_UE_TST(idx_UE)   + 1;
-							n_HO_BS_TST(idx_trgt) = n_HO_BS_TST(idx_trgt) + 1;	% Only for target cell
+								if idx_trgt <= n_MC 
+									n_HO_P2M = n_HO_P2M + 1;
+								else
+									n_HO_P2P = n_HO_P2P + 1;
+								end	
 
-							% ---------------------------- %
-							% 看是handover到Macro還是Pico  %
-							% ---------------------------- %
-							if idx_trgt <= n_MC 
-								n_HO_P2M = n_HO_P2M + 1;
+								% --------- %
+								% TTT Reset %
+								% --------- %
+								timer_TTT_TST(idx_UE) = t_TTT;	% 2016.12.28
 							else
-								n_HO_P2P = n_HO_P2P + 1;
-							end	
+								Handover_Failure_times = Handover_Failure_times + 1;
 
-							% --------- %
-							% TTT Reset %
-							% --------- %
-							timer_TTT_TST(idx_UE) = t_TTT;	% 2016.12.28
-						else
-							Handover_Failure_times = Handover_Failure_times + 1;
+								% Handover失敗了，看是Handover誰而失敗，阿為什麼失敗，計錄下來
+								if Dis_Handover_Reason == 1
+									if idx_trgt <= n_MC
+										Handover_to_Macro_Failure_NoRB_times = Handover_to_Macro_Failure_NoRB_times + 1;
+									else
+										Handover_to_Pico_Failure_NoRB_times  = Handover_to_Pico_Failure_NoRB_times + 1;
+									end
 
-							% Handover失敗了，看是Handover誰而失敗，阿為什麼失敗，計錄下來
-							if Dis_Handover_Reason == 1
-								if idx_trgt <= n_MC
-									Handover_to_Macro_Failure_NoRB_times = Handover_to_Macro_Failure_NoRB_times + 1;
-								else
-									Handover_to_Pico_Failure_NoRB_times  = Handover_to_Pico_Failure_NoRB_times + 1;
+								elseif Dis_Handover_Reason == 2
+									if idx_trgt <= n_MC
+										Handover_to_Macro_Failure_RBNotGood_times = Handover_to_Macro_Failure_RBNotGood_times + 1;										
+									else
+										Handover_to_Pico_Failure_RBNotGood_times  = Handover_to_Pico_Failure_RBNotGood_times + 1;
+									end
 								end
-
-							elseif Dis_Handover_Reason == 2
-								if idx_trgt <= n_MC
-									Handover_to_Macro_Failure_RBNotGood_times = Handover_to_Macro_Failure_RBNotGood_times + 1;										
-								else
-									Handover_to_Pico_Failure_RBNotGood_times  = Handover_to_Pico_Failure_RBNotGood_times + 1;
-								end
+								Dis_Handover_Reason = 0;
 							end
-							Dis_Handover_Reason = 0;
 						end
 					end
 				end
@@ -1159,11 +1152,12 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					timer_Drop_OngoingCall_NoRB(idx_UE)      = t_T310;
 					timer_Drop_OngoingCall_RBNotGood(idx_UE) = t_T310;
 
-					% 順利離開CoMP到Serving Cell，P2P_CoMP+1
+					% 順利離開CoMP到Serving Cell，P2P_CoMP+1	
 					if idx_UEcnct_TST(idx_UE) == temp_Serving
-						n_HO_BS_TST(temp_Serving) = n_HO_BS_TST(temp_Serving) + 1;	% Only for target cell
-						n_HO_P2P_CoMP             = n_HO_P2P_CoMP + 1;
-					end
+						n_HO_UE_TST(idx_UE)                 = n_HO_UE_TST(idx_UE) + 1;				
+						n_HO_BS_TST(idx_UEcnct_TST(idx_UE)) = n_HO_BS_TST(idx_UEcnct_TST(idx_UE)) + 1;
+						n_HO_P2P_CoMP                       = n_HO_P2P_CoMP + 1;
+					end					
 
 					% Success Leave CoMP 記上一筆
 					Success_Leave_CoMP_times = Success_Leave_CoMP_times + 1;
@@ -1339,14 +1333,14 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		else
 			if UE_CoMP_orNOT(idx_UE) == 0
 				if idx_UEcnct_TST(idx_UE) == 0
-					n_DeadUE_BS(temp_Serving) = n_DeadUE_BS(temp_Serving) + 0.5;
+					n_DeadUE_BS(temp_Serving)     = n_DeadUE_BS(temp_Serving)     + 0.5;
 					n_DeadUE_BS(temp_Cooperating) = n_DeadUE_BS(temp_Cooperating) + 0.5;
 				else
-					n_LiveUE_BS(temp_Serving) = n_LiveUE_BS(temp_Serving) + 1;
+					n_LiveUE_BS(idx_UEcnct_TST(idx_UE)) = n_LiveUE_BS(idx_UEcnct_TST(idx_UE)) + 1;
 				end
 
 			else
-				n_LiveUE_BS(temp_Serving)     = n_LiveUE_BS(temp_Serving) + 0.5;
+				n_LiveUE_BS(temp_Serving)     = n_LiveUE_BS(temp_Serving)     + 0.5;
 				n_LiveUE_BS(temp_Cooperating) = n_LiveUE_BS(temp_Cooperating) + 0.5;
 			end	
 		end
