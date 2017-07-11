@@ -84,7 +84,7 @@ n_UE = length(UE_lct);			                                            % 全部UE�
 % -----------------------------------------------------
 % -------------/* Handover Setting */------------------
 % -----------------------------------------------------
-HHM    = 3;	  % [dB]										% [[[ADJ]]]     % Handover Hysteresis Margin [dB]
+HHM    = 2;	  % [dB]										% [[[ADJ]]]     % Handover Hysteresis Margin [dB]
 t_TTT  = 0.1; % [sec]										% [[[ADJ]]]     % NYC
 t_T310 = 1;   % [sec]
 
@@ -380,7 +380,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 	AMP_Noise  = LTE_NoiseFloor_watt * abs(randn(1));                            % 每個時間點的白高斯 雜訊都不一樣 [watt/RB]
 
-	CIO_TST(1:1:n_MC) = -5;
+	% CIO_TST(1:1:n_MC) = -5;
 
 	UE_surviving = 0;
 	UE_surviving = length(nonzeros(UE_CoMP_orNOT)) + length(nonzeros(idx_UEcnct_TST));
@@ -970,10 +970,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 			% -------------------------------------------------------------------------- %
 			% 找一個除了Serving Cell跟Cooperating Cell以外，RSRP+CIO最大的  %
 			% -------------------------------------------------------------------------- %
-			temp_rsrp = RsrpBS_dBm + CIO_TST;
-			% 把Serving Cell跟Cooperating Cell除掉
-			temp_rsrp(idx_UEcnct_CoMP(idx_UE, 1)) = min(temp_rsrp); 
-			temp_rsrp(idx_UEcnct_CoMP(idx_UE, 2)) = min(temp_rsrp); 			
+			temp_rsrp = RsrpBS_dBm + CIO_TST;		
 			% 找到搂!!! idx_trgt就是你 			
 			[~, idx_trgt] = max(temp_rsrp);
 			
@@ -1008,15 +1005,15 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 			% --------------------------------------------------------------------- %
 			% 看看單切掉一邊，還可不可以滿足QoS  (Flowchart沒有這段，自己斟酌一下)  %
 			% --------------------------------------------------------------------- %
-			if UE_CoMP_orNOT(idx_UE) == 1
-				if RsrpBS_dBm(idx_UEcnct_CoMP(idx_UE, 1)) > RsrpBS_dBm(idx_UEcnct_CoMP(idx_UE, 2)) + HHM && UE_Throughput(idx_UE) >= GBR
-					[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE)] = CoMP_Choice_to_Non_CoMP(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-																																											   idx_UE, idx_UEcnct_CoMP(idx_UE, 2), idx_UEcnct_CoMP(idx_UE, 2), UE_Throughput(idx_UE), GBR, BW_PRB, idx_UEcnct_CoMP);
-					if idx_UEcnct_TST(idx_UE) ~= 0	
-						Dis_Connect_Reason = 0;
-					end
-				end
-			end
+			% if UE_CoMP_orNOT(idx_UE) == 1
+			% 	if RsrpBS_dBm(idx_UEcnct_CoMP(idx_UE, 1)) > RsrpBS_dBm(idx_UEcnct_CoMP(idx_UE, 2)) + HHM && UE_Throughput(idx_UE) >= GBR
+			% 		[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE)] = CoMP_Choice_to_Non_CoMP(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+			% 																																								   idx_UE, idx_UEcnct_CoMP(idx_UE, 2), idx_UEcnct_CoMP(idx_UE, 2), UE_Throughput(idx_UE), GBR, BW_PRB, idx_UEcnct_CoMP);
+			% 		if idx_UEcnct_TST(idx_UE) ~= 0	
+			% 			Dis_Connect_Reason = 0;
+			% 		end
+			% 	end
+			% end
 
 
 			if UE_CoMP_orNOT(idx_UE) == 1
@@ -1081,54 +1078,24 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 						% -------------------------------------------------- %
 						% 上面的方法都沒用了，再來看說可不可以handover出去   %
 						% -------------------------------------------------- %
-						if (timer_TTT_TST(idx_UE) <= t_TTT && timer_TTT_TST(idx_UE) > 0)
-
-							% 單純減TTT
-							timer_TTT_TST(idx_UE) = timer_TTT_TST(idx_UE) - t_d;
-							if (timer_TTT_TST(idx_UE) < 1e-5)	% [SPECIAL CASE] 0930
-								timer_TTT_TST(idx_UE) = 0;		% [SPECIAL CASE]
-							end 
-
-						elseif (timer_TTT_TST(idx_UE) == 0)	
-							[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE), Dis_Handover_Reason] = CoMP_HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-										                                                                                                                                                                      idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), idx_trgt, idx_UEcnct_CoMP, UE_Throughput(idx_UE), ...
-										                                                                                                                                                                      GBR, BW_PRB);
+						[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE)] = CoMP_HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+									                                                                                                                                                 idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), idx_trgt, idx_UEcnct_CoMP, UE_Throughput(idx_UE), ...
+									                                                                                                                                                 GBR, BW_PRB);
+						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
+						
+						if UE_Throughput(idx_UE) < GBR
+							% ---------------------------------------------------- %
+							% 連handover都沒辦法，那你就直接切給Serving   Cell裝死 %
+							% ---------------------------------------------------- %
+							[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE)] = CoMP_Compel_to_Non_CoMP(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+																																												       idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), idx_UEcnct_CoMP, BW_PRB);
 							% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
-							if UE_CoMP_orNOT(idx_UE) == 0
-								% !!!!!!!!!!成功Handover到Target Cell!!!!!!!!!!
-
-								n_HO_UE_TST(idx_UE)   = n_HO_UE_TST(idx_UE)   + 1;
-								n_HO_BS_TST(idx_trgt) = n_HO_BS_TST(idx_trgt) + 1;	% Only for target cell
-
-								if idx_trgt <= n_MC 
-									n_HO_P2M = n_HO_P2M + 1;
-								else
-									n_HO_P2P = n_HO_P2P + 1;
-								end	
-
-								% --------- %
-								% TTT Reset %
-								% --------- %
-								timer_TTT_TST(idx_UE) = t_TTT;	% 2016.12.28
+							
+							if UE_Throughput(idx_UE) < GBR
+								[BS_RB_table, BS_RB_who_used, UE_RB_used, UE_Throughput(idx_UE), Dis_Connect_Reason] = Non_CoMP_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+																																	    idx_UE, idx_UEcnct_TST(idx_UE), UE_Throughput(idx_UE), GBR, BW_PRB);
 							else
-								Handover_Failure_times = Handover_Failure_times + 1;
-
-								% Handover失敗了，看是Handover誰而失敗，阿為什麼失敗，計錄下來
-								if Dis_Handover_Reason == 1
-									if idx_trgt <= n_MC
-										Handover_to_Macro_Failure_NoRB_times = Handover_to_Macro_Failure_NoRB_times + 1;
-									else
-										Handover_to_Pico_Failure_NoRB_times  = Handover_to_Pico_Failure_NoRB_times + 1;
-									end
-
-								elseif Dis_Handover_Reason == 2
-									if idx_trgt <= n_MC
-										Handover_to_Macro_Failure_RBNotGood_times = Handover_to_Macro_Failure_RBNotGood_times + 1;										
-									else
-										Handover_to_Pico_Failure_RBNotGood_times  = Handover_to_Pico_Failure_RBNotGood_times + 1;
-									end
-								end
-								Dis_Handover_Reason = 0;
+								Dis_Connect_Reason = 0;
 							end
 						end
 					end
@@ -1152,13 +1119,11 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 					timer_Drop_OngoingCall_NoRB(idx_UE)      = t_T310;
 					timer_Drop_OngoingCall_RBNotGood(idx_UE) = t_T310;
 
-					% 順利離開CoMP到Serving Cell，P2P_CoMP+1	
-					if idx_UEcnct_TST(idx_UE) == temp_Serving
-						n_HO_UE_TST(idx_UE)                 = n_HO_UE_TST(idx_UE) + 1;				
-						n_HO_BS_TST(idx_UEcnct_TST(idx_UE)) = n_HO_BS_TST(idx_UEcnct_TST(idx_UE)) + 1;
-						n_HO_P2P_CoMP                       = n_HO_P2P_CoMP + 1;
-					end					
-
+					% 順利離開CoMP到Serving Cell，P2P_CoMP+1
+					n_HO_UE_TST(idx_UE)                 = n_HO_UE_TST(idx_UE) + 1;				
+					n_HO_BS_TST(idx_UEcnct_TST(idx_UE)) = n_HO_BS_TST(idx_UEcnct_TST(idx_UE)) + 1;
+					n_HO_P2P_CoMP                       = n_HO_P2P_CoMP + 1;
+									
 					% Success Leave CoMP 記上一筆
 					Success_Leave_CoMP_times = Success_Leave_CoMP_times + 1;
 
@@ -1381,6 +1346,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
     % ======================== %
     % 算Macro跟Pico的服務人數  %
     % ======================== %
+    [Load_TST] = Update_Loading(n_BS, n_MC, BS_RB_table, n_ttoffered, Pico_part);	
     for idx_BS = 1:1:n_BS
     	BS_Loading_Record_RB(idx_BS, round(idx_t/t_d))          = Load_TST(idx_BS);
     	BS_Loading_Record_Serving_Num(idx_BS, round(idx_t/t_d)) = length(find(idx_UEcnct_TST == idx_BS)) + length(find(idx_UEcnct_CoMP(:,1) == idx_BS))*0.5 + length(find(idx_UEcnct_CoMP(:,2) == idx_BS))*0.5;

@@ -1,7 +1,7 @@
 % ======================================================== %
 % 該function是用來讓**Handover Call**的UE，根據SINR來拿RB  %
 % ======================================================== %
-function [BS_RB_table_output, BS_RB_who_used_output, UE_RB_used_output, idx_UEcnct_TST_output, idx_UEcnct_CoMP_output, UE_CoMP_orNOT_output, UE_throughput_After_take, Dis_Handover_Reason] = CoMP_HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+function [BS_RB_table_output, BS_RB_who_used_output, UE_RB_used_output, idx_UEcnct_TST_output, idx_UEcnct_CoMP_output, UE_CoMP_orNOT_output, UE_throughput_After_take] = CoMP_HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
 										                                                                                                                                                                                idx_UE, Serving_Cell_index, Cooperating_Cell_index, Target_Cell_index, idx_UEcnct_CoMP, UE_Throughput, ...
 										                                                                                                                                                                                GBR, BW_PRB)
 
@@ -13,27 +13,13 @@ temp_BS_RB_who_used = BS_RB_who_used;
 temp_UE_RB_used     = UE_RB_used;
 temp_UE_Throughput  = UE_Throughput;
 
-Dis_Handover_Reason = 0;                                    % 有2個原因使UE被切斷:   (1)Dis_Handover_Reason = 1  --> BS沒有資源給你拿了
-                                                            %                        (2)Dis_Handover_Reason = 2  --> UE看到他可以用的RB之頻譜效率全都=0
-
 UE_throughput_After_Handover = 0;
-
-% ------- %
-% Initial %
-% ------- %
-RB_UE_used = find(UE_RB_used(idx_UE, 1:1:Pico_part) == 1);
-
-if Target_Cell_index <= n_MC
-	RB_we_can_take = find(BS_RB_table(Target_Cell_index,:) == 0);              % UE可以跟Target Cell拿的RB位置
-else
-	RB_we_can_take = find(BS_RB_table(Target_Cell_index, 1:1:Pico_part) == 0); % UE可以跟Target Cell拿的RB位置
-end
-
-RB_we_can_take_SINR = zeros(1, length(RB_we_can_take)); % 每一塊可以拿的RB，所提供的SINR多少   [bit/sec/RB]
 
 % --------------------------- %
 % UE先把做CoMP拿的RB全部放掉  %
 % --------------------------- %
+RB_UE_used = find(UE_RB_used(idx_UE, 1:1:Pico_part) == 1);
+
 if isempty(RB_UE_used) ~= 1
 	for RB_index = 1:1:length(RB_UE_used)	
 		BS_RB_table(Serving_Cell_index, RB_UE_used(RB_index))        = 0;
@@ -44,6 +30,18 @@ if isempty(RB_UE_used) ~= 1
 	end
 end
 
+% ------------------------- %
+% 看Target Cell那些RB可以拿 %
+% ------------------------- %
+if Target_Cell_index <= n_MC
+	RB_we_can_take = find(BS_RB_table(Target_Cell_index,:) == 0);              % UE可以跟Target Cell拿的RB位置
+else
+	RB_we_can_take = find(BS_RB_table(Target_Cell_index, 1:1:Pico_part) == 0); % UE可以跟Target Cell拿的RB位置
+end
+
+RB_we_can_take_SINR = zeros(1, length(RB_we_can_take)); % 每一塊可以拿的RB，所提供的SINR多少   [bit/sec/RB]
+
+
 % ---------------- %
 % 看有沒有RB可以拿 %
 % ---------------- %
@@ -53,7 +51,6 @@ if isempty(RB_we_can_take) == 1
 	UE_RB_used                   = temp_UE_RB_used;
 	UE_throughput_After_Handover = 0;
 
-	Dis_Handover_Reason          = 1;
 else
 	% ---------------------------------------------- %
 	% 再來算說Target Cell中，可以拿的RB之SINR是多少  %
@@ -93,7 +90,6 @@ else
 			UE_RB_used                   = temp_UE_RB_used;
 			UE_throughput_After_Handover = 0;
 
-			Dis_Handover_Reason          = 1;
 			break;
 		else
 			[RB_maxSINR_value, RB_maxSINR_index] = max(RB_we_can_take_SINR);
@@ -106,7 +102,6 @@ else
 				UE_RB_used                   = temp_UE_RB_used;
 				UE_throughput_After_Handover = 0;
 
-				Dis_Handover_Reason          = 2;
 				break;
 			else
 		    	BS_RB_table(Target_Cell_index, RB_we_can_take(RB_maxSINR_index))    = 1;      % 把該位置記錄說，有人在用了		    	
@@ -134,7 +129,6 @@ if UE_throughput_After_Handover >= GBR
 
 	UE_throughput_After_take   = UE_throughput_After_Handover;
 
-	Dis_Handover_Reason        = 0;
 
 else	
 	idx_UEcnct_TST             = 0;

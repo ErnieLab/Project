@@ -84,7 +84,7 @@ n_UE = length(UE_lct);			                                            % ?®ÈÉ®UE?Ñ
 % -----------------------------------------------------
 % -------------/* Handover Setting */------------------
 % -----------------------------------------------------
-HHM    = 3;	  % [dB]										% [[[ADJ]]]     % Handover Hysteresis Margin [dB]
+HHM    = 2;	  % [dB]										% [[[ADJ]]]     % Handover Hysteresis Margin [dB]
 t_TTT  = 0.1; % [sec]										% [[[ADJ]]]     % NYC
 t_T310 = 1;   % [sec]
 
@@ -997,7 +997,8 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
     % ÁµêÊ?Loop 2(UE?ÑLoop)
     % ======================== %
     % ÁÆóMacroË∑üPico?ÑÊ??ô‰∫∫?? %
-    % ======================== %    
+    % ======================== %  
+    [Load_TST] = Update_Loading(n_BS, n_MC, BS_RB_table, n_ttoffered, Pico_part);	  
     for idx_BS = 1:1:n_BS
     	BS_Loading_Record_RB(idx_BS, round(idx_t/t_d))          = Load_TST(idx_BS); 
     	BS_Loading_Record_Serving_Num(idx_BS, round(idx_t/t_d)) = length(find(idx_UEcnct_TST == idx_BS));   	   	
