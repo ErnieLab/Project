@@ -8,7 +8,7 @@
 load('MC_lct_4sq');	 % ?ŠMacro?„ä?ç½®è??²ä?ï¼Œè??¸å?ç¨±ç‚º:  Macro_location
 
 edge   = 4763;       % ç³»çµ±?„é???[m]
-n_Pico = 250;        % Pico Cell ?„æ•¸??
+n_Pico = 400;        % Pico Cell ?„æ•¸??
 
 % ----- %
 % Start %

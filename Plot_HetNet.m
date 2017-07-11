@@ -5,6 +5,7 @@ clc, clear, close all
 
 rectEdge = 4763;
 load('MC_lct_4sq'); load('PC_lct_4sq_n250_random');
+load('UE_lct_n400_centralize');
 
 n_MC = length(Macro_location);
 n_PC = length(Pico_location);
@@ -16,7 +17,7 @@ P_PC_dBm = 30;
 figure(), box on, hold on;
 plot(Macro_location(:,1), Macro_location(:,2), 's', 'Color',[0.2 0.4 0.8],'MarkerFaceColor', [0.2 0.4 0.8], 'MarkerSize',12);
 plot(Pico_location(:,1), Pico_location(:,2), '^', 'Color',[0.2 0.8 0.4],'MarkerFaceColor', [0.2 0.8 0.4], 'MarkerSize', 7);
-% plot(UE_lct(:,1), UE_lct(:,2), '*', 'Color',[0.8 0.0 0.2],'MarkerSize',3);
+plot(UE_location(:,1), UE_location(:,2), '*', 'Color',[0.8 0.0 0.2],'MarkerSize',3);
 plot([+1,-1,-1,+1,+1]*rectEdge/2, [+1,+1,-1,-1,+1]*rectEdge/2, 'Color', [0.0 0.0 0.0]);
 title('Location of Base Stations');
 legend('Macrocell','Picocell','RSRP_{targ} = RSRP_{serv}','location','Northeast');
