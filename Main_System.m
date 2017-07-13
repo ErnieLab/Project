@@ -349,6 +349,7 @@ Failure_Leave_CoMP_Compel_times    = 0;
 Failure_Leave_CoMP_NoRB_times      = 0;                    % 離開CoMP後沒人有辦法接手
 Failure_Leave_CoMP_RBNotGood_times = 0;
 
+Handover_success_rate                     = 0;             % UE Handover 成功的機率 (從Base Station 的角度看出去)
 
 Handover_Failure_times                    = 0;             % Handover失敗的次數
 Handover_to_Macro_Failure_NoRB_times      = 0;             % 想handover到Macro但是被拒絕的次數
@@ -380,7 +381,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 	AMP_Noise  = LTE_NoiseFloor_watt * abs(randn(1));                            % 每個時間點的白高斯 雜訊都不一樣 [watt/RB]
 
-	% CIO_TST(1:1:n_MC) = -5;
+	CIO_TST(1:1:n_MC) = -5;
 
 	UE_surviving = 0;
 	UE_surviving = length(nonzeros(UE_CoMP_orNOT)) + length(nonzeros(idx_UEcnct_TST));
@@ -613,6 +614,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 						if idx_UEcnct_TST(idx_UE) == idx_trgt
 							% !!!!!!!!!!成功Handvoer到Target Cell!!!!!!!!!!
+
 							% ---------------- %
 							% Handover次數計算 %
 							% ---------------- %
@@ -1363,9 +1365,9 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
     	end    	
     end
 
-	% ======================================== %
-	% 算UE的Call Block Rate and Call Drop Rate %
-	% ======================================== %
+	% ============================================================== %
+	% 算UE的Call Block Rate and Call Drop Rate and Handover 成功機率 % 
+	% ============================================================== %
 	% UE Call Block Rate
 	UE_CBR = UE_CBR + (n_Block_UE);
 
@@ -1376,8 +1378,14 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 		Average_UE_CDR = Average_UE_CDR + 0;
 	end
 
-	UE_CDR      = UE_CDR + (n_Drop_UE);
-	
+	UE_CDR = UE_CDR + (n_Drop_UE);
+
+	% UE handover成功的機率 (從基地台的角度看出去)
+	if n_HO_BS_TST(idx_BS) == 0 && CDR_BS(idx_BS) == 0
+		Handover_success_rate = Handover_success_rate + 0;
+	else	
+		Handover_success_rate = Handover_success_rate + ( sum(CDR_BS(idx_BS)) /(sum(CDR_BS(idx_BS)) + sum(n_HO_BS_TST(idx_BS))));
+	end	
 
 	% UE平均存活人數	
 	UE_survive = UE_survive + (n_UE - n_Block_UE - n_Drop_UE);
