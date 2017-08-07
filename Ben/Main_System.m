@@ -77,7 +77,7 @@ LTE_NoiseFloor_watt = 10^((LTE_NoiseFloor_dBm - 30)/10);					% Noise Floor appro
 % -----------------------------------------------------
 % ------------/* User ä½ç½®?Œæ•¸??*/--------------------
 % -----------------------------------------------------
-load('UE_lct_n400_random');
+load('UE_lct_n600_random');
 UE_lct = UE_location;                                                       % è®?E?„ä?ç½®å‡ºä¾?(æ³¨æ?æª”å?)
 n_UE = length(UE_lct);			                                            % ?¨éƒ¨UE?„æ•¸??
 

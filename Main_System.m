@@ -77,7 +77,7 @@ LTE_NoiseFloor_watt = 10^((LTE_NoiseFloor_dBm - 30)/10);					% Noise Floor appro
 % -----------------------------------------------------
 % ------------/* User 位置和數目 */--------------------
 % -----------------------------------------------------
-load('UE_lct_n400_random');
+load('UE_lct_n600_random');
 UE_lct = UE_location;                                                       % 讀UE的位置出來 (注意檔名)
 n_UE = length(UE_lct);			                                            % 全部UE的數目
 
@@ -145,9 +145,9 @@ idx_RsrpPC = 0;														        % Just Initialization
 % UE setting
 UE_v              = zeros(n_UE, 2);									        % User's velocities on x-axis & y-axis respectively
 UE_timer_RWP1step = zeros(n_UE, 1);									        % The Timer of RandomWayPoint for changing DIRC
-load('seedSpeedMDS'); 	% 1000 x 6666								        % 2016.11.17
-load('seedAngleDEG');   % 1000 x 6666								        % 2016.11.24
-load('seedEachStep'); 	% 1000 x 6666									    % 2016.11.17
+load('seedSpeedMDS'); 	% 1000 x 1800								        % 2016.11.17
+load('seedAngleDEG');   % 1000 x 1800								        % 2016.11.24
+load('seedEachStep'); 	% 1000 x 1800									    % 2016.11.17
 idx_SEED          = ones(n_UE, 1);	% seed index						    % 2016.11.17
 INT_SSL           = zeros(n_UE,1);	% Interference proposed by SSL
 
@@ -1080,9 +1080,9 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 						% -------------------------------------------------- %
 						% 上面的方法都沒用了，再來看說可不可以handover出去   %
 						% -------------------------------------------------- %
-						[BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE)] = CoMP_HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
-									                                                                                                                                                 idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), idx_trgt, idx_UEcnct_CoMP, UE_Throughput(idx_UE), ...
-									                                                                                                                                                 GBR, BW_PRB);
+						% [BS_RB_table, BS_RB_who_used, UE_RB_used, idx_UEcnct_TST(idx_UE), idx_UEcnct_CoMP, UE_CoMP_orNOT(idx_UE), UE_Throughput(idx_UE)] = CoMP_HandoverCall_take_RB(n_MC, n_PC, BS_RB_table, BS_RB_who_used, UE_RB_used, AMP_Noise, n_ttoffered, Pico_part, RsrpBS_Watt, ...
+						% 			                                                                                                                                                 idx_UE, idx_UEcnct_CoMP(idx_UE, 1), idx_UEcnct_CoMP(idx_UE, 2), idx_trgt, idx_UEcnct_CoMP, UE_Throughput(idx_UE), ...
+						% 			                                                                                                                                                 GBR, BW_PRB);
 						% Check_RB_Function(UE_RB_used, BS_RB_table, BS_RB_who_used, UE_CoMP_orNOT, idx_UEcnct_TST, idx_UEcnct_CoMP, n_ttoffered, n_UE, n_BS);
 						
 						if UE_Throughput(idx_UE) < GBR
