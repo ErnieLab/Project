@@ -37,7 +37,7 @@ n_Measured = t_simu/t_d;	                                                % # mea
 % -----------------------------------------------------
 rectEdge = 4763;															% 系統的邊界 [meter]
 load('MC_lct_4sq');															% 大細胞的位置讀出來，矩陣叫:  Macro_location		
-load('PC_lct_4sq_n250_random');                                         % 小細胞的位置讀出來 ，矩陣叫: Pico_location
+load('PC_lct_4sq_n250_random');                                             % 小細胞的位置讀出來 ，矩陣叫: Pico_location
 BS_lct = [Macro_location ; Pico_location];								    % 全部細胞的位置
 
 P_MC_dBm    =  46;															% 大細胞 total TX power (全部頻帶加起來的power) [dBm]
@@ -1170,7 +1170,7 @@ for idx_t = t_start : t_d : t_simu   								            % [sec] % 0.1 sec per l
 
 					% 還原
 					Dis_Connect_Reason = 0;
-				else
+				else % ****以下都不會發生了，因為UE查覺JT不行就先直接切斷，回到Non-JT找機會，所已不會有在JT裡面死掉****
 					if Dis_Connect_Reason == 1 % 因為找不到資源給你CoMP了，數TTT等待機會，TTT結束還沒機會我看你也是走遠了
 						if timer_Drop_CoMPCall_NoRB(idx_UE) <= t_T310 && timer_Drop_CoMPCall_NoRB(idx_UE) > 0
 							timer_Drop_CoMPCall_NoRB(idx_UE) = timer_Drop_CoMPCall_NoRB(idx_UE) - t_d;
